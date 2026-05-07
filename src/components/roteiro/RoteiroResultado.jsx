@@ -4,6 +4,7 @@ import ValidacaoGauge from './ValidacaoGauge';
 import TituloAnalise from './TituloAnalise';
 import TempoCard from './TempoCard';
 import PontosChecklist from './PontosChecklist';
+import ShortsDestaque from './ShortsDestaque';
 
 const scoreColor = (s) => s >= 85 ? 'score-high' : s >= 65 ? 'score-mid' : 'score-low';
 const barColor = (s) => s >= 85 ? 'bg-green-500' : s >= 65 ? 'bg-highlight' : 'bg-destructive';
@@ -27,10 +28,10 @@ function ScoreBar({ label, score }) {
   );
 }
 
-export default function RoteiroResultado({ resultado, onOtimizar, otimizando, onGerarSugestoes, gerandoSugestoes, sugestoesTitulo }) {
+export default function RoteiroResultado({ resultado, roteiroOriginal, onOtimizar, otimizando, onGerarSugestoes, gerandoSugestoes, sugestoesTitulo }) {
   if (!resultado) return null;
 
-  const { title, score_geral, scores, resumo, pontos_fortes, pontos_fracos, sugestoes, gancho, cta, tempo_estimado_minutos, tempo_status, tempo_feedback, analise_titulo } = resultado;
+  const { title, score_geral, scores, resumo, pontos_fortes, pontos_fracos, sugestoes, gancho, cta, tempo_estimado_minutos, tempo_status, tempo_feedback, analise_titulo, shorts_sugeridos } = resultado;
 
   return (
     <motion.div
@@ -109,6 +110,11 @@ export default function RoteiroResultado({ resultado, onOtimizar, otimizando, on
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed italic">"{cta}"</p>
         </div>
+      )}
+
+      {/* Auto Shorts */}
+      {shorts_sugeridos && shorts_sugeridos.length > 0 && roteiroOriginal?.text && (
+        <ShortsDestaque texto={roteiroOriginal.text} shortssugeridos={shorts_sugeridos} />
       )}
 
       {/* Pontos Fortes / Fracos */}

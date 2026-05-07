@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useFunnel } from '@/lib/FunnelContext';
+import { useRoteiro } from '@/lib/RoteiroContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Rocket, Target } from 'lucide-react';
 import RoteiroInput from '../components/roteiro/RoteiroInput';
@@ -9,13 +10,16 @@ import RoteiroOtimizado from '../components/roteiro/RoteiroOtimizado';
 
 export default function Roteiro() {
   const { funnel, config } = useFunnel();
+  const {
+    resultado, setResultado,
+    roteiroOriginal, setRoteiroOriginal,
+    roteiroOtimizado, setRoteiroOtimizado,
+    sugestoesTitulo, setSugestoesTitulo,
+  } = useRoteiro();
+
   const [loading, setLoading] = useState(false);
-  const [resultado, setResultado] = useState(null);
-  const [roteiroOriginal, setRoteiroOriginal] = useState(null);
   const [otimizando, setOtimizando] = useState(false);
-  const [roteiroOtimizado, setRoteiroOtimizado] = useState(null);
   const [gerandoSugestoes, setGerandoSugestoes] = useState(false);
-  const [sugestoesTitulo, setSugestoesTitulo] = useState(null);
   const FunnelIcon = funnel === 'top' ? Rocket : Target;
 
   const handleAnalyze = async ({ title, text }) => {
@@ -34,7 +38,7 @@ export default function Roteiro() {
       metadata: { name: `Análise: ${title || 'Sem título'}` }
     });
 
-    const mensagem = await base44.agents.addMessage(conversation, {
+    await base44.agents.addMessage(conversation, {
       role: 'user',
       content: `Analisa este roteiro de ${funnelContext}.
 
@@ -63,6 +67,12 @@ Responde APENAS com um JSON válido, sem markdown, sem explicações fora do JSO
   "tempo_estimado_minutos": ${duracaoEstimadaMin},
   "tempo_status": "<ideal|curto|longo>",
   "tempo_feedback": "<feedback sobre o tempo e como ajustar>",
+  "shorts_sugeridos": [
+    {
+      "trecho": "<trecho EXATO do roteiro que viraria um short — copie palavra por palavra do roteiro>",
+      "motivo": "<por que este trecho é ideal para short>"
+    }
+  ],
   "analise_titulo": {
     "score_alinhamento": <número 0-100 baseado no alinhamento com o funil ${funnelContext}>,
     "feedback": "<feedback específico sobre o título, mencionando o que está bom e o que deve melhorar para o funil>",
@@ -72,7 +82,6 @@ Responde APENAS com um JSON válido, sem markdown, sem explicações fora do JSO
 }`
     });
 
-    // Aguarda resposta do agente via polling
     let resposta = null;
     for (let i = 0; i < 30; i++) {
       await new Promise(r => setTimeout(r, 2000));
@@ -86,7 +95,6 @@ Responde APENAS com um JSON válido, sem markdown, sem explicações fora do JSO
 
     if (!resposta) throw new Error('O agente não respondeu a tempo.');
 
-    // Extrai o JSON da resposta
     const jsonMatch = resposta.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Resposta do agente não contém JSON válido.');
     const result = JSON.parse(jsonMatch[0]);
@@ -193,7 +201,6 @@ Responde APENAS com o roteiro reescrito, sem introduções, sem explicações, s
 
   return (
     <div className="space-y-5 animate-fade-in">
-      {/* Funnel Banner */}
       <AnimatePresence mode="wait">
         <motion.div
           key={funnel}
@@ -213,10 +220,8 @@ Responde APENAS com o roteiro reescrito, sem introduções, sem explicações, s
       </AnimatePresence>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        {/* Left — Input */}
         <RoteiroInput onAnalyze={handleAnalyze} loading={loading} />
 
-        {/* Right — Resultado */}
         <div>
           {!resultado && !loading && (
             <div className="flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed border-border rounded-xl">
@@ -251,6 +256,7 @@ Responde APENAS com o roteiro reescrito, sem introduções, sem explicações, s
             <>
               <RoteiroResultado
                 resultado={resultado}
+                roteiroOriginal={roteiroOriginal}
                 onOtimizar={handleOtimizar}
                 otimizando={otimizando}
                 onGerarSugestoes={handleGerarSugestoes}

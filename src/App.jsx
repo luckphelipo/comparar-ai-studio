@@ -6,9 +6,10 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import { FunnelProvider } from '@/lib/FunnelContext';
+import { RoteiroProvider } from '@/lib/RoteiroContext';
 import AppLayout from './components/layout/AppLayout';
 import Dashboard from './pages/Dashboard';
-import Roteiro from './pages/Roteiro';
+import Roteiro from './pages/Roteiro.jsx';
 import Shorts from './pages/Shorts';
 import Thumbnails from './pages/Thumbnails';
 import Biblioteca from './pages/Biblioteca';
@@ -60,12 +61,14 @@ function App() {
   return (
     <AuthProvider>
       <FunnelProvider>
+        <RoteiroProvider>
         <QueryClientProvider client={queryClientInstance}>
           <Router>
             <AuthenticatedApp />
           </Router>
           <Toaster />
         </QueryClientProvider>
+        </RoteiroProvider>
       </FunnelProvider>
     </AuthProvider>
   );
