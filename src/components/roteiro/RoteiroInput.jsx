@@ -24,7 +24,7 @@ export default function RoteiroInput({ onAnalyze, loading }) {
 
       {/* Title */}
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Título do Vídeo (opcional)</label>
+        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Título do Vídeo</label>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}

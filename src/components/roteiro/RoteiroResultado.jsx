@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion';
-import { Sparkles, TrendingUp, AlertTriangle, CheckCircle2, Zap, MessageSquare, Target, Clock, Wand2, RefreshCw } from 'lucide-react';
+import { Sparkles, TrendingUp, CheckCircle2, Zap, MessageSquare, Target, Wand2, RefreshCw } from 'lucide-react';
 import ValidacaoGauge from './ValidacaoGauge';
 import TituloAnalise from './TituloAnalise';
+import TempoCard from './TempoCard';
+import PontosChecklist from './PontosChecklist';
 
 const scoreColor = (s) => s >= 85 ? 'score-high' : s >= 65 ? 'score-mid' : 'score-low';
 const barColor = (s) => s >= 85 ? 'bg-green-500' : s >= 65 ? 'bg-highlight' : 'bg-destructive';
@@ -38,7 +40,17 @@ export default function RoteiroResultado({ resultado, onOtimizar, otimizando, on
       className="space-y-5"
     >
       {/* Gauge de Validação */}
-      <ValidacaoGauge scoreGeral={score_geral} />
+      <ValidacaoGauge scoreGeral={score_geral} tempoEstimado={tempo_estimado_minutos} tempoStatus={tempo_status} />
+
+      {/* Análise do Título — logo após validação */}
+      {analise_titulo && (
+        <TituloAnalise
+          analise={analise_titulo}
+          onGerarSugestoes={onGerarSugestoes}
+          gerandoSugestoes={gerandoSugestoes}
+          sugestoes={sugestoesTitulo}
+        />
+      )}
 
       {/* Score Geral */}
       <div className="bg-card border border-border rounded-xl p-5">
@@ -61,30 +73,11 @@ export default function RoteiroResultado({ resultado, onOtimizar, otimizando, on
 
       {/* Tempo do Vídeo */}
       {tempo_feedback && (
-        <div className={`border rounded-xl p-5 ${
-          tempo_status === 'ideal' ? 'bg-green-500/5 border-green-500/20' :
-          'bg-highlight/5 border-highlight/20'
-        }`}>
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold text-foreground">Tempo Estimado do Vídeo</h3>
-            </div>
-            <div className="flex items-center gap-2">
-              {tempo_estimado_minutos && (
-                <span className="text-xs font-bold font-mono text-foreground">~{tempo_estimado_minutos} min</span>
-              )}
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono border ${
-                tempo_status === 'ideal' ? 'bg-green-500/15 text-green-400 border-green-500/30' :
-                tempo_status === 'curto' ? 'bg-highlight/15 text-highlight border-highlight/30' :
-                'bg-destructive/15 text-destructive border-destructive/30'
-              }`}>
-                {tempo_status === 'ideal' ? 'IDEAL' : tempo_status === 'curto' ? 'CURTO' : 'LONGO'}
-              </span>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground leading-relaxed">{tempo_feedback}</p>
-        </div>
+        <TempoCard
+          tempoEstimado={tempo_estimado_minutos}
+          tempoStatus={tempo_status}
+          tempoFeedback={tempo_feedback}
+        />
       )}
 
       {/* Resumo */}
@@ -135,20 +128,7 @@ export default function RoteiroResultado({ resultado, onOtimizar, otimizando, on
           </ul>
         </div>
 
-        <div className="bg-card border border-border rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle className="w-4 h-4 text-highlight" />
-            <h3 className="text-sm font-semibold text-foreground">Pontos a Melhorar</h3>
-          </div>
-          <ul className="space-y-2">
-            {pontos_fracos.map((p, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-highlight mt-1.5 flex-shrink-0" />
-                <p className="text-xs text-muted-foreground leading-relaxed">{p}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <PontosChecklist pontos={pontos_fracos} />
       </div>
 
       {/* Sugestões */}
@@ -167,17 +147,7 @@ export default function RoteiroResultado({ resultado, onOtimizar, otimizando, on
         </ul>
       </div>
 
-      {/* Análise do Título */}
-      {analise_titulo && (
-        <TituloAnalise
-          analise={analise_titulo}
-          onGerarSugestoes={onGerarSugestoes}
-          gerandoSugestoes={gerandoSugestoes}
-          sugestoes={sugestoesTitulo}
-        />
-      )}
-
-      {/* Botão Otimizar */}
+      {/* Botão Otimizar Todos os Pontos */}
       {onOtimizar && (
         <button
           onClick={onOtimizar}
@@ -192,7 +162,7 @@ export default function RoteiroResultado({ resultado, onOtimizar, otimizando, on
           ) : (
             <>
               <Wand2 className="w-4 h-4" />
-              Otimizar Roteiro com IA
+              Otimizar Todos os Pontos com IA
             </>
           )}
         </button>
