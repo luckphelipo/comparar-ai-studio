@@ -20,16 +20,31 @@ export default function Roteiro() {
       ? 'Topo de Funil (viralização, alcance, emoção, curiosidade)'
       : 'Fundo de Funil (conversão, autoridade, confiança, leads)';
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Você é um especialista em roteiros para YouTube com foco em ${funnelContext}.
+    const duracaoIdeal = funnel === 'top'
+      ? '7 a 8 minutos'
+      : '9 a 12 minutos';
 
-Analise o seguinte roteiro e retorne uma análise detalhada:
+    const palavrasPorMinuto = 130;
+    const palavras = text.split(/\s+/).filter(Boolean).length;
+    const duracaoEstimadaMin = Math.round(palavras / palavrasPorMinuto);
+
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Você é um especialista em roteiros para YouTube no nicho de TURISMO e SEGUROS DE VIAGEM, com foco em ${funnelContext}.
+
+Use seu conhecimento atualizado sobre o mercado para identificar o que funciona melhor nesse nicho para ${funnelContext}: tipos de conteúdo, gatilhos emocionais, abordagens de conversão, tendências de engajamento e melhores práticas de canais líderes do setor.
+
+ANÁLISE DE TEMPO:
+- Duração estimada do roteiro: aproximadamente ${duracaoEstimadaMin} minuto(s) (baseado em ~130 palavras/minuto)
+- Duração ideal para ${funnelContext}: ${duracaoIdeal}
+- Avalie se o roteiro está dentro da faixa ideal e sugira ajustes específicos caso não esteja.
 
 TÍTULO: ${title || 'Não informado'}
 ROTEIRO:
 ${text}
 
-Analise considerando a estratégia de ${funnelContext}. Seja preciso e detalhado.`,
+Analise considerando a estratégia de ${funnelContext} para o nicho de turismo e seguros de viagem. Seja preciso, detalhado e baseie suas sugestões nas melhores práticas do setor.`,
+      add_context_from_internet: true,
+      model: 'gemini_3_flash',
       response_json_schema: {
         type: 'object',
         properties: {
@@ -50,7 +65,10 @@ Analise considerando a estratégia de ${funnelContext}. Seja preciso e detalhado
           cta: { type: 'string', description: 'Trecho do CTA principal detectado' },
           pontos_fortes: { type: 'array', items: { type: 'string' }, description: '3-4 pontos fortes do roteiro' },
           pontos_fracos: { type: 'array', items: { type: 'string' }, description: '3-4 pontos a melhorar' },
-          sugestoes: { type: 'array', items: { type: 'string' }, description: '3-5 sugestões concretas de melhoria' }
+          sugestoes: { type: 'array', items: { type: 'string' }, description: '3-5 sugestões concretas de melhoria' },
+          tempo_estimado_minutos: { type: 'number', description: 'Duração estimada do roteiro em minutos' },
+          tempo_status: { type: 'string', enum: ['ideal', 'curto', 'longo'], description: 'Se o tempo está dentro da faixa ideal, abaixo ou acima' },
+          tempo_feedback: { type: 'string', description: 'Feedback específico sobre o tempo do vídeo e como ajustar para a faixa ideal do funil' }
         }
       }
     });

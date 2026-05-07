@@ -26,7 +26,7 @@ function ScoreBar({ label, score }) {
 export default function RoteiroResultado({ resultado }) {
   if (!resultado) return null;
 
-  const { title, score_geral, scores, resumo, pontos_fortes, pontos_fracos, sugestoes, gancho, cta } = resultado;
+  const { title, score_geral, scores, resumo, pontos_fortes, pontos_fracos, sugestoes, gancho, cta, tempo_estimado_minutos, tempo_status, tempo_feedback } = resultado;
 
   return (
     <motion.div
@@ -53,6 +53,34 @@ export default function RoteiroResultado({ resultado }) {
           ))}
         </div>
       </div>
+
+      {/* Tempo do Vídeo */}
+      {tempo_feedback && (
+        <div className={`border rounded-xl p-5 ${
+          tempo_status === 'ideal' ? 'bg-green-500/5 border-green-500/20' :
+          'bg-highlight/5 border-highlight/20'
+        }`}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold text-foreground">Tempo Estimado do Vídeo</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              {tempo_estimado_minutos && (
+                <span className="text-xs font-bold font-mono text-foreground">~{tempo_estimado_minutos} min</span>
+              )}
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono border ${
+                tempo_status === 'ideal' ? 'bg-green-500/15 text-green-400 border-green-500/30' :
+                tempo_status === 'curto' ? 'bg-highlight/15 text-highlight border-highlight/30' :
+                'bg-destructive/15 text-destructive border-destructive/30'
+              }`}>
+                {tempo_status === 'ideal' ? 'IDEAL' : tempo_status === 'curto' ? 'CURTO' : 'LONGO'}
+              </span>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">{tempo_feedback}</p>
+        </div>
+      )}
 
       {/* Resumo */}
       <div className="bg-card border border-border rounded-xl p-5">
