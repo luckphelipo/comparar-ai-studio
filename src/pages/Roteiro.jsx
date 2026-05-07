@@ -17,61 +17,67 @@ export default function Roteiro() {
     setResultado(null);
 
     const funnelContext = funnel === 'top'
-      ? 'Topo de Funil (viralização, alcance, emoção, curiosidade)'
-      : 'Fundo de Funil (conversão, autoridade, confiança, leads)';
+      ? 'Topo de Funil (ToFu) — viralização, alcance, emoção, curiosidade'
+      : 'Fundo de Funil (BoFu) — conversão, autoridade, confiança, leads';
 
-    const duracaoIdeal = funnel === 'top'
-      ? '7 a 8 minutos'
-      : '9 a 12 minutos';
-
-    const palavrasPorMinuto = 130;
     const palavras = text.split(/\s+/).filter(Boolean).length;
-    const duracaoEstimadaMin = Math.round(palavras / palavrasPorMinuto);
+    const duracaoEstimadaMin = Math.round(palavras / 140);
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Você é um especialista em roteiros para YouTube no nicho de TURISMO e SEGUROS DE VIAGEM, com foco em ${funnelContext}.
+    const conversation = await base44.agents.createConversation({
+      agent_name: 'auditor_roteiros',
+      metadata: { name: `Análise: ${title || 'Sem título'}` }
+    });
 
-Use seu conhecimento atualizado sobre o mercado para identificar o que funciona melhor nesse nicho para ${funnelContext}: tipos de conteúdo, gatilhos emocionais, abordagens de conversão, tendências de engajamento e melhores práticas de canais líderes do setor.
-
-ANÁLISE DE TEMPO:
-- Duração estimada do roteiro: aproximadamente ${duracaoEstimadaMin} minuto(s) (baseado em ~130 palavras/minuto)
-- Duração ideal para ${funnelContext}: ${duracaoIdeal}
-- Avalie se o roteiro está dentro da faixa ideal e sugira ajustes específicos caso não esteja.
+    const mensagem = await base44.agents.addMessage(conversation, {
+      role: 'user',
+      content: `Analisa este roteiro de ${funnelContext}.
 
 TÍTULO: ${title || 'Não informado'}
+PALAVRAS: ${palavras} (~${duracaoEstimadaMin} min a 140 WPM)
 ROTEIRO:
 ${text}
 
-Analise considerando a estratégia de ${funnelContext} para o nicho de turismo e seguros de viagem. Seja preciso, detalhado e baseie suas sugestões nas melhores práticas do setor.`,
-      add_context_from_internet: true,
-      model: 'gemini_3_flash',
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          score_geral: { type: 'number', description: 'Score geral de 0 a 100' },
-          scores: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                label: { type: 'string' },
-                value: { type: 'number' }
-              }
-            },
-            description: 'Array com scores de: Gancho, Ritmo, Retenção, CTA, Clareza, Potencial Viral'
-          },
-          resumo: { type: 'string', description: 'Resumo analítico em 2-3 frases' },
-          gancho: { type: 'string', description: 'Trecho do gancho principal detectado (primeiros segundos)' },
-          cta: { type: 'string', description: 'Trecho do CTA principal detectado' },
-          pontos_fortes: { type: 'array', items: { type: 'string' }, description: '3-4 pontos fortes do roteiro' },
-          pontos_fracos: { type: 'array', items: { type: 'string' }, description: '3-4 pontos a melhorar' },
-          sugestoes: { type: 'array', items: { type: 'string' }, description: '3-5 sugestões concretas de melhoria' },
-          tempo_estimado_minutos: { type: 'number', description: 'Duração estimada do roteiro em minutos' },
-          tempo_status: { type: 'string', enum: ['ideal', 'curto', 'longo'], description: 'Se o tempo está dentro da faixa ideal, abaixo ou acima' },
-          tempo_feedback: { type: 'string', description: 'Feedback específico sobre o tempo do vídeo e como ajustar para a faixa ideal do funil' }
-        }
-      }
+Responde APENAS com um JSON válido, sem markdown, sem explicações fora do JSON, seguindo EXATAMENTE este schema:
+{
+  "score_geral": <número 0-100>,
+  "scores": [
+    {"label": "Gancho", "value": <0-100>},
+    {"label": "Ritmo", "value": <0-100>},
+    {"label": "Retenção", "value": <0-100>},
+    {"label": "CTA", "value": <0-100>},
+    {"label": "SEO", "value": <0-100>},
+    {"label": "Potencial Viral", "value": <0-100>}
+  ],
+  "resumo": "<resumo analítico em 2-3 frases>",
+  "gancho": "<trecho do gancho detectado>",
+  "cta": "<trecho do CTA detectado>",
+  "pontos_fortes": ["<ponto 1>", "<ponto 2>", "<ponto 3>"],
+  "pontos_fracos": ["<ponto 1>", "<ponto 2>", "<ponto 3>"],
+  "sugestoes": ["<sugestão 1>", "<sugestão 2>", "<sugestão 3>", "<sugestão 4>"],
+  "tempo_estimado_minutos": ${duracaoEstimadaMin},
+  "tempo_status": "<ideal|curto|longo>",
+  "tempo_feedback": "<feedback sobre o tempo e como ajustar>"
+}`
     });
+
+    // Aguarda resposta do agente via polling
+    let resposta = null;
+    for (let i = 0; i < 30; i++) {
+      await new Promise(r => setTimeout(r, 2000));
+      const conv = await base44.agents.getConversation(conversation.id);
+      const lastMsg = conv.messages?.[conv.messages.length - 1];
+      if (lastMsg?.role === 'assistant' && lastMsg?.content) {
+        resposta = lastMsg.content;
+        break;
+      }
+    }
+
+    if (!resposta) throw new Error('O agente não respondeu a tempo.');
+
+    // Extrai o JSON da resposta
+    const jsonMatch = resposta.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Resposta do agente não contém JSON válido.');
+    const result = JSON.parse(jsonMatch[0]);
 
     setResultado({ ...result, title });
     setLoading(false);
