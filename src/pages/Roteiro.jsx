@@ -14,6 +14,8 @@ export default function Roteiro() {
   const [roteiroOriginal, setRoteiroOriginal] = useState(null);
   const [otimizando, setOtimizando] = useState(false);
   const [roteiroOtimizado, setRoteiroOtimizado] = useState(null);
+  const [gerandoSugestoes, setGerandoSugestoes] = useState(false);
+  const [sugestoesTitulo, setSugestoesTitulo] = useState(null);
   const FunnelIcon = funnel === 'top' ? Rocket : Target;
 
   const handleAnalyze = async ({ title, text }) => {
@@ -60,7 +62,13 @@ Responde APENAS com um JSON válido, sem markdown, sem explicações fora do JSO
   "sugestoes": ["<sugestão 1>", "<sugestão 2>", "<sugestão 3>", "<sugestão 4>"],
   "tempo_estimado_minutos": ${duracaoEstimadaMin},
   "tempo_status": "<ideal|curto|longo>",
-  "tempo_feedback": "<feedback sobre o tempo e como ajustar>"
+  "tempo_feedback": "<feedback sobre o tempo e como ajustar>",
+  "analise_titulo": {
+    "score_alinhamento": <número 0-100 baseado no alinhamento com o funil ${funnelContext}>,
+    "feedback": "<feedback específico sobre o título, mencionando o que está bom e o que deve melhorar para o funil>",
+    "erro_alinhamento": "<null se não há erro, ou descreva o erro de alinhamento detectado>",
+    "sugestao_correcao": "<null se o título está ok, ou um título sugerido corrigido>"
+  }
 }`
     });
 
@@ -86,7 +94,56 @@ Responde APENAS com um JSON válido, sem markdown, sem explicações fora do JSO
     setResultado({ ...result, title });
     setRoteiroOriginal({ title, text });
     setRoteiroOtimizado(null);
+    setSugestoesTitulo(null);
     setLoading(false);
+  };
+
+  const handleGerarSugestoes = async () => {
+    if (!roteiroOriginal) return;
+    setGerandoSugestoes(true);
+
+    const funnelContext = funnel === 'top'
+      ? 'Topo de Funil (ToFu) — viralização, alcance, emoção, curiosidade'
+      : 'Fundo de Funil (BoFu) — conversão, autoridade, confiança, leads';
+
+    const conversation = await base44.agents.createConversation({
+      agent_name: 'auditor_roteiros',
+      metadata: { name: `Sugestões de Título: ${roteiroOriginal.title || 'Sem título'}` }
+    });
+
+    await base44.agents.addMessage(conversation, {
+      role: 'user',
+      content: `Gera exatamente 5 sugestões de títulos para o seguinte roteiro de ${funnelContext}.
+
+TÍTULO ATUAL: ${roteiroOriginal.title || 'Não informado'}
+ROTEIRO (trecho inicial para contexto):
+${roteiroOriginal.text.slice(0, 800)}
+
+Responde APENAS com um JSON válido, sem markdown, seguindo EXATAMENTE este schema:
+{
+  "sugestoes": ["<título 1>", "<título 2>", "<título 3>", "<título 4>", "<título 5>"]
+}`
+    });
+
+    let resposta = null;
+    for (let i = 0; i < 30; i++) {
+      await new Promise(r => setTimeout(r, 2000));
+      const conv = await base44.agents.getConversation(conversation.id);
+      const lastMsg = conv.messages?.[conv.messages.length - 1];
+      if (lastMsg?.role === 'assistant' && lastMsg?.content) {
+        resposta = lastMsg.content;
+        break;
+      }
+    }
+
+    if (resposta) {
+      const jsonMatch = resposta.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        setSugestoesTitulo(parsed.sugestoes || []);
+      }
+    }
+    setGerandoSugestoes(false);
   };
 
   const handleOtimizar = async () => {
@@ -192,7 +249,14 @@ Responde APENAS com o roteiro reescrito, sem introduções, sem explicações, s
 
           {resultado && (
             <>
-              <RoteiroResultado resultado={resultado} onOtimizar={handleOtimizar} otimizando={otimizando} />
+              <RoteiroResultado
+                resultado={resultado}
+                onOtimizar={handleOtimizar}
+                otimizando={otimizando}
+                onGerarSugestoes={handleGerarSugestoes}
+                gerandoSugestoes={gerandoSugestoes}
+                sugestoesTitulo={sugestoesTitulo}
+              />
               {(otimizando || roteiroOtimizado) && (
                 <div className="mt-5">
                   <RoteiroOtimizado texto={roteiroOtimizado} loading={otimizando} />

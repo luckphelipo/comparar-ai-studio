@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
 import { Sparkles, TrendingUp, AlertTriangle, CheckCircle2, Zap, MessageSquare, Target, Clock, Wand2, RefreshCw } from 'lucide-react';
+import ValidacaoGauge from './ValidacaoGauge';
+import TituloAnalise from './TituloAnalise';
 
 const scoreColor = (s) => s >= 85 ? 'score-high' : s >= 65 ? 'score-mid' : 'score-low';
 const barColor = (s) => s >= 85 ? 'bg-green-500' : s >= 65 ? 'bg-highlight' : 'bg-destructive';
@@ -23,10 +25,10 @@ function ScoreBar({ label, score }) {
   );
 }
 
-export default function RoteiroResultado({ resultado, onOtimizar, otimizando }) {
+export default function RoteiroResultado({ resultado, onOtimizar, otimizando, onGerarSugestoes, gerandoSugestoes, sugestoesTitulo }) {
   if (!resultado) return null;
 
-  const { title, score_geral, scores, resumo, pontos_fortes, pontos_fracos, sugestoes, gancho, cta, tempo_estimado_minutos, tempo_status, tempo_feedback } = resultado;
+  const { title, score_geral, scores, resumo, pontos_fortes, pontos_fracos, sugestoes, gancho, cta, tempo_estimado_minutos, tempo_status, tempo_feedback, analise_titulo } = resultado;
 
   return (
     <motion.div
@@ -35,6 +37,9 @@ export default function RoteiroResultado({ resultado, onOtimizar, otimizando }) 
       transition={{ duration: 0.4 }}
       className="space-y-5"
     >
+      {/* Gauge de Validação */}
+      <ValidacaoGauge scoreGeral={score_geral} />
+
       {/* Score Geral */}
       <div className="bg-card border border-border rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
@@ -161,6 +166,16 @@ export default function RoteiroResultado({ resultado, onOtimizar, otimizando }) 
           ))}
         </ul>
       </div>
+
+      {/* Análise do Título */}
+      {analise_titulo && (
+        <TituloAnalise
+          analise={analise_titulo}
+          onGerarSugestoes={onGerarSugestoes}
+          gerandoSugestoes={gerandoSugestoes}
+          sugestoes={sugestoesTitulo}
+        />
+      )}
 
       {/* Botão Otimizar */}
       {onOtimizar && (
