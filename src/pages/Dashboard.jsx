@@ -8,6 +8,8 @@ import RecentProjects from '../components/dashboard/RecentProjects';
 import ActivityChart from '../components/dashboard/ActivityChart';
 import QuickActions from '../components/dashboard/QuickActions';
 import ScoreRing from '../components/dashboard/ScoreRing';
+import FunnelIntelligence from '../components/dashboard/FunnelIntelligence';
+import { useFunnel } from '@/lib/FunnelContext';
 
 const metrics = [
   { title: 'Roteiros Analisados', value: '148', change: '+12%', changeType: 'up', subtitle: 'este mês', icon: FileText, color: 'primary', delay: 0 },
@@ -17,6 +19,7 @@ const metrics = [
 ];
 
 export default function Dashboard() {
+  const { config, funnel } = useFunnel();
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Welcome Banner */}
@@ -64,8 +67,9 @@ export default function Dashboard() {
           <RecentProjects />
         </div>
 
-        {/* Right — Quick Actions + AI Insights */}
+        {/* Right — Quick Actions + Funnel Intel + AI Insights */}
         <div className="space-y-6">
+          <FunnelIntelligence />
           <QuickActions />
 
           {/* AI Insights */}

@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import { FunnelProvider } from '@/lib/FunnelContext';
 import AppLayout from './components/layout/AppLayout';
 import Dashboard from './pages/Dashboard';
 import Roteiro from './pages/Roteiro';
@@ -58,12 +59,14 @@ const AuthenticatedApp = () => {
 function App() {
   return (
     <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
+      <FunnelProvider>
+        <QueryClientProvider client={queryClientInstance}>
+          <Router>
+            <AuthenticatedApp />
+          </Router>
+          <Toaster />
+        </QueryClientProvider>
+      </FunnelProvider>
     </AuthProvider>
   );
 }

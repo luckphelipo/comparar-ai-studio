@@ -25,7 +25,7 @@ const activeBattle = {
   b: { label: 'Variação B — Carro', color: 'from-slate-900 via-slate-700 to-blue-950' },
 };
 
-export default function ThumbBattle() {
+export default function ThumbBattle({ funnel = 'top', config = {} }) {
   const [voted, setVoted] = useState(null);
   const [activeVotes, setActiveVotes] = useState({ a: 51, b: 49 });
 
@@ -46,9 +46,16 @@ export default function ThumbBattle() {
     <div className="space-y-6">
       {/* Active Battle */}
       <div className="bg-card border border-border rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-1">
-          <Swords className="w-4 h-4 text-highlight" />
-          <span className="text-xs font-mono text-highlight uppercase tracking-widest">Battle Ativa</span>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <Swords className="w-4 h-4 text-highlight" />
+            <span className="text-xs font-mono text-highlight uppercase tracking-widest">Battle Ativa</span>
+          </div>
+          <div className="flex gap-1.5">
+            {(config.thumbFoco || []).map((f) => (
+              <span key={f} className={`text-[10px] font-medium px-2 py-0.5 rounded border ${config.badgeClass || 'bg-primary/10 text-primary border-primary/20'}`}>{f}</span>
+            ))}
+          </div>
         </div>
         <h3 className="text-base font-semibold text-foreground mb-5">{activeBattle.title}</h3>
 
@@ -127,16 +134,19 @@ export default function ThumbBattle() {
         {!voted ? (
           <p className="text-xs text-center text-muted-foreground">
             <Sparkles className="w-3 h-3 inline mr-1 text-primary" />
-            Vote para ver a análise da IA sobre qual tem mais CTR
+            Vote para ver a análise da IA sobre qual tem mais {funnel === 'top' ? 'potencial viral' : 'potencial de conversão'}
           </p>
         ) : (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-3 bg-primary/5 border border-primary/20 rounded-lg text-center"
+            className={`p-3 border rounded-lg text-center ${config.bgClass || 'bg-primary/5'} ${config.borderClass || 'border-primary/20'}`}
           >
-            <p className="text-xs text-primary font-medium">
-              A IA concorda com você! A Variação A tem <span className="font-bold">37% mais CTR estimado</span> com base em padrões de alto desempenho.
+            <p className={`text-xs font-medium ${config.colorClass || 'text-primary'}`}>
+              {funnel === 'top'
+                ? <>A IA concorda! A Variação A tem <span className="font-bold">37% mais potencial viral</span> — emoção e tensão visual são superiores.</>
+                : <>A IA concorda! A Variação A transmite <span className="font-bold">maior autoridade e confiança</span> — ideal para conversão.</>
+              }
             </p>
           </motion.div>
         )}

@@ -19,12 +19,23 @@ const thumbColors = [
   'from-slate-900 via-slate-800 to-blue-950',
 ];
 
-export default function ThumbGenerator() {
+const funnelStyles = {
+  top: ['Cinematográfico', 'Storytelling', 'Impacto Emocional', 'Neon Viral', 'Dark Premium'],
+  bottom: ['Autoridade Clean', 'Minimalista Pro', 'Confiança Bold', 'Educativo Claro', 'Dark Premium'],
+};
+const funnelEmotions = {
+  top: ['Surpresa', 'Curiosidade', 'Empolgação', 'Medo de Perder', 'Euforia'],
+  bottom: ['Confiança', 'Segurança', 'Clareza', 'Autoridade', 'Certeza'],
+};
+
+export default function ThumbGenerator({ funnel = 'top', config = {} }) {
   const [title, setTitle] = useState('');
-  const [selectedStyle, setSelectedStyle] = useState('Cinematográfico');
-  const [selectedEmotion, setSelectedEmotion] = useState('Surpresa');
+  const [selectedStyle, setSelectedStyle] = useState('');
+  const [selectedEmotion, setSelectedEmotion] = useState('');
   const [generated, setGenerated] = useState(false);
   const [loading, setLoading] = useState(false);
+  const styles = funnelStyles[funnel] || funnelStyles.top;
+  const emotions = funnelEmotions[funnel] || funnelEmotions.top;
 
   const handleGenerate = () => {
     setLoading(true);
@@ -58,7 +69,7 @@ export default function ThumbGenerator() {
 
           {/* Style */}
           <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Estilo Visual</label>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Estilo Visual <span className={`font-bold ${config.colorClass || 'text-primary'}`}>({funnel === 'top' ? 'Topo' : 'Fundo'})</span></label>
             <div className="flex flex-wrap gap-2">
               {styles.map((s) => (
                 <button
@@ -66,7 +77,7 @@ export default function ThumbGenerator() {
                   onClick={() => setSelectedStyle(s)}
                   className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${
                     selectedStyle === s
-                      ? 'bg-primary/15 border-primary/40 text-primary'
+                      ? `${config.bgClass || 'bg-primary/15'} ${config.borderClass || 'border-primary/40'} ${config.colorClass || 'text-primary'}`
                       : 'bg-secondary/40 border-border text-muted-foreground hover:text-foreground'
                   }`}
                 >
@@ -78,7 +89,7 @@ export default function ThumbGenerator() {
 
           {/* Emotion */}
           <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Emoção Alvo</label>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Emoção / Intenção Alvo</label>
             <div className="flex flex-wrap gap-2">
               {emotions.map((e) => (
                 <button
@@ -86,7 +97,7 @@ export default function ThumbGenerator() {
                   onClick={() => setSelectedEmotion(e)}
                   className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${
                     selectedEmotion === e
-                      ? 'bg-highlight/15 border-highlight/40 text-highlight'
+                      ? `${config.bgClass || 'bg-highlight/15'} ${config.borderClass || 'border-highlight/40'} ${config.colorClass || 'text-highlight'}`
                       : 'bg-secondary/40 border-border text-muted-foreground hover:text-foreground'
                   }`}
                 >
