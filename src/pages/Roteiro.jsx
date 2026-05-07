@@ -5,11 +5,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Rocket, Target } from 'lucide-react';
 import RoteiroInput from '../components/roteiro/RoteiroInput';
 import RoteiroResultado from '../components/roteiro/RoteiroResultado';
+import RoteiroOtimizado from '../components/roteiro/RoteiroOtimizado';
 
 export default function Roteiro() {
   const { funnel, config } = useFunnel();
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState(null);
+  const [roteiroOriginal, setRoteiroOriginal] = useState(null);
+  const [otimizando, setOtimizando] = useState(false);
+  const [roteiroOtimizado, setRoteiroOtimizado] = useState(null);
   const FunnelIcon = funnel === 'top' ? Rocket : Target;
 
   const handleAnalyze = async ({ title, text }) => {
@@ -80,7 +84,54 @@ Responde APENAS com um JSON válido, sem markdown, sem explicações fora do JSO
     const result = JSON.parse(jsonMatch[0]);
 
     setResultado({ ...result, title });
+    setRoteiroOriginal({ title, text });
+    setRoteiroOtimizado(null);
     setLoading(false);
+  };
+
+  const handleOtimizar = async () => {
+    if (!resultado || !roteiroOriginal) return;
+    setOtimizando(true);
+
+    const funnelContext = funnel === 'top'
+      ? 'Topo de Funil (ToFu) — viralização, alcance, emoção, curiosidade'
+      : 'Fundo de Funil (BoFu) — conversão, autoridade, confiança, leads';
+
+    const conversation = await base44.agents.createConversation({
+      agent_name: 'auditor_roteiros',
+      metadata: { name: `Otimização: ${roteiroOriginal.title || 'Sem título'}` }
+    });
+
+    await base44.agents.addMessage(conversation, {
+      role: 'user',
+      content: `Reescreve este roteiro corrigindo TODOS os pontos fracos identificados abaixo. Mantém o estilo e a essência do autor, mas aplica todas as melhorias necessárias para ${funnelContext}.
+
+PONTOS FRACOS IDENTIFICADOS:
+${resultado.pontos_fracos.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+
+SUGESTÕES DE MELHORIA:
+${resultado.sugestoes.map((s, i) => `${i + 1}. ${s}`).join('\n')}
+
+ROTEIRO ORIGINAL:
+${roteiroOriginal.text}
+
+Responde APENAS com o roteiro reescrito, sem introduções, sem explicações, sem markdown extra. Apenas o texto do roteiro otimizado.`
+    });
+
+    let resposta = null;
+    for (let i = 0; i < 30; i++) {
+      await new Promise(r => setTimeout(r, 2000));
+      const conv = await base44.agents.getConversation(conversation.id);
+      const lastMsg = conv.messages?.[conv.messages.length - 1];
+      if (lastMsg?.role === 'assistant' && lastMsg?.content) {
+        resposta = lastMsg.content;
+        break;
+      }
+    }
+
+    if (!resposta) throw new Error('O agente não respondeu a tempo.');
+    setRoteiroOtimizado(resposta);
+    setOtimizando(false);
   };
 
   return (
@@ -139,7 +190,16 @@ Responde APENAS com um JSON válido, sem markdown, sem explicações fora do JSO
             </div>
           )}
 
-          {resultado && <RoteiroResultado resultado={resultado} />}
+          {resultado && (
+            <>
+              <RoteiroResultado resultado={resultado} onOtimizar={handleOtimizar} otimizando={otimizando} />
+              {(otimizando || roteiroOtimizado) && (
+                <div className="mt-5">
+                  <RoteiroOtimizado texto={roteiroOtimizado} loading={otimizando} />
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Sparkles, TrendingUp, AlertTriangle, CheckCircle2, Zap, MessageSquare, Target, Clock } from 'lucide-react';
+import { Sparkles, TrendingUp, AlertTriangle, CheckCircle2, Zap, MessageSquare, Target, Clock, Wand2, RefreshCw } from 'lucide-react';
 
 const scoreColor = (s) => s >= 85 ? 'score-high' : s >= 65 ? 'score-mid' : 'score-low';
 const barColor = (s) => s >= 85 ? 'bg-green-500' : s >= 65 ? 'bg-highlight' : 'bg-destructive';
@@ -23,7 +23,7 @@ function ScoreBar({ label, score }) {
   );
 }
 
-export default function RoteiroResultado({ resultado }) {
+export default function RoteiroResultado({ resultado, onOtimizar, otimizando }) {
   if (!resultado) return null;
 
   const { title, score_geral, scores, resumo, pontos_fortes, pontos_fracos, sugestoes, gancho, cta, tempo_estimado_minutos, tempo_status, tempo_feedback } = resultado;
@@ -161,6 +161,27 @@ export default function RoteiroResultado({ resultado }) {
           ))}
         </ul>
       </div>
+
+      {/* Botão Otimizar */}
+      {onOtimizar && (
+        <button
+          onClick={onOtimizar}
+          disabled={otimizando}
+          className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-primary to-blue-500 hover:from-primary/90 hover:to-blue-500/90 disabled:opacity-60 disabled:cursor-not-allowed text-primary-foreground rounded-xl font-semibold text-sm transition-all glow-blue-strong"
+        >
+          {otimizando ? (
+            <>
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              Otimizando roteiro...
+            </>
+          ) : (
+            <>
+              <Wand2 className="w-4 h-4" />
+              Otimizar Roteiro com IA
+            </>
+          )}
+        </button>
+      )}
     </motion.div>
   );
 }
