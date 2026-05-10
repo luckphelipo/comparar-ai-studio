@@ -3,12 +3,13 @@ import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, X, BookImage, Loader2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 
-export default function ReferenciaGaleria({ onRefsChange }) {
+export default function ReferenciaGaleria({ onRefsChange, alwaysExpanded = false }) {
   const [refs, setRefs] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [editingNota, setEditingNota] = useState(null);
   const fileInputRef = useRef(null);
+  const isOpen = alwaysExpanded || expanded;
 
   useEffect(() => {
     loadRefs();
@@ -51,45 +52,41 @@ export default function ReferenciaGaleria({ onRefsChange }) {
   };
 
   return (
-    <div className="border border-border rounded-xl bg-card/50 overflow-hidden">
-      {/* Header colapsável */}
-      <button
-        onClick={() => setExpanded(v => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-secondary/30 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <BookImage className="w-4 h-4 text-primary" />
-          <span className="text-sm font-semibold text-foreground">Galeria de Referências</span>
-          {refs.length > 0 && (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/20 text-primary font-mono">
-              {refs.length}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {refs.length > 0 && (
-            <span className="text-[11px] text-green-400 font-medium">
-              ✓ Guiando o agente
-            </span>
-          )}
-          {expanded ? (
-            <ChevronUp className="w-4 h-4 text-muted-foreground" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          )}
-        </div>
-      </button>
+    <div className="overflow-hidden">
+      {/* Header colapsável — só aparece quando não é alwaysExpanded */}
+      {!alwaysExpanded && (
+        <button
+          onClick={() => setExpanded(v => !v)}
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-secondary/30 transition-colors border border-border rounded-xl bg-card/50"
+        >
+          <div className="flex items-center gap-2">
+            <BookImage className="w-4 h-4 text-primary" />
+            <span className="text-sm font-semibold text-foreground">Galeria de Referências</span>
+            {refs.length > 0 && (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/20 text-primary font-mono">
+                {refs.length}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {refs.length > 0 && (
+              <span className="text-[11px] text-green-400 font-medium">✓ Guiando o agente</span>
+            )}
+            {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+          </div>
+        </button>
+      )}
 
       <AnimatePresence>
-        {expanded && (
+        {isOpen && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
+            initial={alwaysExpanded ? false : { height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
+            exit={alwaysExpanded ? undefined : { height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-4 space-y-3 border-t border-border pt-3">
+            <div className={`space-y-3 ${!alwaysExpanded ? 'px-4 pb-4 border-t border-border pt-3' : ''}`}>
               {/* Upload button */}
               <input
                 ref={fileInputRef}
@@ -118,7 +115,7 @@ export default function ReferenciaGaleria({ onRefsChange }) {
               )}
 
               {/* Grid de referências */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {refs.map((ref) => (
                   <div key={ref.id} className="group relative rounded-lg overflow-hidden border border-border bg-secondary/30">
                     <div className="aspect-video relative">
