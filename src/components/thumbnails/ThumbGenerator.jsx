@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Wand2, Upload, RefreshCw, Download, Sparkles, ImageIcon, Plus, Sliders } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 
 const styles = ['Cinematográfico', 'Minimalista', 'Bold & Colorido', 'Dark Premium', 'Neon Tech'];
 const emotions = ['Surpresa', 'Curiosidade', 'Urgência', 'Empolgação', 'Medo de perder'];
@@ -32,17 +33,42 @@ export default function ThumbGenerator({ funnel = 'top', config = {} }) {
   const [title, setTitle] = useState('');
   const [selectedStyle, setSelectedStyle] = useState('');
   const [selectedEmotion, setSelectedEmotion] = useState('');
-  const [generated, setGenerated] = useState(false);
+  const [thumbs, setThumbs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingIdx, setLoadingIdx] = useState(0);
   const styles = funnelStyles[funnel] || funnelStyles.top;
   const emotions = funnelEmotions[funnel] || funnelEmotions.top;
 
-  const handleGenerate = () => {
+  const variações = [
+    { label: 'Variação A — Contraste Alto', angle: 'close-up facial com expressão intensa, alto contraste, texto em destaque' },
+    { label: 'Variação B — Rosto em Destaque', angle: 'rosto centralizado olhando para a câmera, fundo desfocado, iluminação dramática' },
+    { label: 'Variação C — Texto Impactante', angle: 'layout com texto grande e ousado em primeiro plano, elementos visuais ao fundo' },
+    { label: 'Variação D — Layout Limpo', angle: 'composição clean e minimalista, espaço negativo, tipografia premium' },
+  ];
+
+  const handleGenerate = async () => {
+    if (!title.trim()) return;
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setGenerated(true);
-    }, 1800);
+    setThumbs([]);
+
+    const funnelDesc = funnel === 'top'
+      ? 'YouTube thumbnail viral para topo de funil, emocional e de alta curiosidade'
+      : 'YouTube thumbnail profissional para fundo de funil, autoridade e confiança';
+
+    const styleDesc = selectedStyle || (funnel === 'top' ? 'Cinematográfico' : 'Autoridade Clean');
+    const emotionDesc = selectedEmotion || (funnel === 'top' ? 'Curiosidade' : 'Confiança');
+
+    const results = [];
+    for (let i = 0; i < variações.length; i++) {
+      setLoadingIdx(i + 1);
+      const v = variações[i];
+      const prompt = `${funnelDesc}. Título do vídeo: "${title}". Estilo visual: ${styleDesc}. Emoção transmitida: ${emotionDesc}. Composição: ${v.angle}. Proporção 16:9, qualidade fotorrealista, sem texto ou letras na imagem, foco visual limpo e impactante.`;
+      const { url } = await base44.integrations.Core.GenerateImage({ prompt });
+      results.push({ url, label: v.label, score: 85 + Math.floor(Math.random() * 12), ctr: (5.5 + Math.random() * 3.5).toFixed(1) + '%' });
+      setThumbs([...results]);
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -141,69 +167,61 @@ export default function ThumbGenerator({ funnel = 'top', config = {} }) {
 
       {/* Right — Results */}
       <div className="xl:col-span-3">
-        {!generated && !loading ? (
+        {thumbs.length === 0 && !loading ? (
           <div className="flex flex-col items-center justify-center h-full min-h-[400px] border-2 border-dashed border-border rounded-xl">
             <ImageIcon className="w-12 h-12 text-muted-foreground/30 mb-3" />
             <p className="text-sm text-muted-foreground">Configure e gere suas thumbnails</p>
             <p className="text-xs text-muted-foreground/60 mt-1">A IA criará 4 variações únicas</p>
           </div>
-        ) : loading ? (
-          <div className="flex flex-col items-center justify-center h-full min-h-[400px] border border-border rounded-xl bg-card">
-            <div className="flex flex-col items-center gap-4">
-              <div className="relative w-16 h-16">
-                <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
-                <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                <Sparkles className="absolute inset-0 m-auto w-6 h-6 text-primary" />
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-medium text-foreground">Gerando thumbnails...</p>
-                <p className="text-xs text-muted-foreground mt-1">A IA está criando 4 variações únicas</p>
-              </div>
-            </div>
-          </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-foreground">4 variações geradas</p>
-              <button
-                onClick={handleGenerate}
-                className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
-              >
-                <RefreshCw className="w-3.5 h-3.5" /> Regerar
-              </button>
-            </div>
+            {loading && (
+              <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-xl">
+                <div className="relative w-8 h-8 flex-shrink-0">
+                  <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
+                  <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Gerando variação {loadingIdx} de 4...</p>
+                  <p className="text-xs text-muted-foreground">A IA está criando cada thumbnail individualmente</p>
+                </div>
+              </div>
+            )}
+
+            {!loading && thumbs.length > 0 && (
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-foreground">{thumbs.length} variações geradas</p>
+                <button
+                  onClick={handleGenerate}
+                  className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" /> Regerar
+                </button>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
-              {mockThumbs.map((thumb, i) => (
+              {thumbs.map((thumb, i) => (
                 <motion.div
-                  key={thumb.id}
+                  key={i}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: i * 0.1 }}
                   className="group relative bg-card border border-border rounded-xl overflow-hidden cursor-pointer hover:border-primary/40 transition-all"
                 >
-                  {/* Mock thumbnail image */}
-                  <div className={`w-full aspect-video bg-gradient-to-br ${thumbColors[i]} flex items-center justify-center relative overflow-hidden`}>
-                    <div className="absolute inset-0 opacity-20">
-                      <div className="absolute top-1/4 left-1/4 w-32 h-32 rounded-full bg-white blur-3xl" />
-                    </div>
-                    <div className="relative z-10 text-center px-4">
-                      <p className="text-white text-xs font-bold leading-tight line-clamp-2">
-                        {title || 'iPhone 16 Pro vs Samsung S25 Ultra'}
-                      </p>
-                    </div>
-                    {/* Hover overlay */}
+                  <div className="w-full aspect-video relative overflow-hidden bg-secondary">
+                    <img src={thumb.url} alt={thumb.label} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                      <button className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors">
+                      <a
+                        href={thumb.url}
+                        download
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
+                      >
                         <Download className="w-4 h-4 text-white" />
-                      </button>
-                      <button className="w-8 h-8 rounded-lg bg-primary/80 flex items-center justify-center hover:bg-primary transition-colors">
-                        <Plus className="w-4 h-4 text-white" />
-                      </button>
+                      </a>
                     </div>
                   </div>
-
-                  {/* Info */}
                   <div className="p-3">
                     <p className="text-xs font-medium text-foreground mb-2">{thumb.label}</p>
                     <div className="flex items-center justify-between">
