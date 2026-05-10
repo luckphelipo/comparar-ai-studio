@@ -173,9 +173,23 @@ export default function ThumbGenerator({ funnel = 'top', config = {} }) {
             <p className="text-sm text-muted-foreground">Configure e gere suas thumbnails</p>
             <p className="text-xs text-muted-foreground/60 mt-1">A IA criará 4 variações únicas</p>
           </div>
+        ) : thumbs.length === 0 && loading ? (
+          <div className="flex flex-col items-center justify-center h-full min-h-[400px] border border-border rounded-xl bg-card">
+            <div className="flex flex-col items-center gap-4">
+              <div className="relative w-16 h-16">
+                <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
+                <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                <Sparkles className="absolute inset-0 m-auto w-6 h-6 text-primary" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-foreground">Gerando variação {loadingIdx} de 4...</p>
+                <p className="text-xs text-muted-foreground mt-1">A IA está criando cada thumbnail individualmente</p>
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="space-y-4">
-            {loading && (
+            {loading && thumbs.length > 0 && (
               <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-xl">
                 <div className="relative w-8 h-8 flex-shrink-0">
                   <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
@@ -183,7 +197,7 @@ export default function ThumbGenerator({ funnel = 'top', config = {} }) {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">Gerando variação {loadingIdx} de 4...</p>
-                  <p className="text-xs text-muted-foreground">A IA está criando cada thumbnail individualmente</p>
+                  <p className="text-xs text-muted-foreground">As próximas estão sendo criadas...</p>
                 </div>
               </div>
             )}
