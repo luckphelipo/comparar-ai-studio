@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Sparkles, Plus, ImageIcon, Wand2, Loader2 } from 'lucide-react';
 import MessageBubble from '../components/thumbdesigner/MessageBubble';
+import ReferenciaGaleria from '../components/thumbdesigner/ReferenciaGaleria';
 import { useRoteiro } from '@/lib/RoteiroContext';
 
 export default function ThumbDesigner() {
@@ -12,6 +13,7 @@ export default function ThumbDesigner() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [refs, setRefs] = useState([]);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -65,7 +67,19 @@ export default function ThumbDesigner() {
     const text = input;
     setInput('');
     setSending(true);
-    await base44.agents.addMessage(conv, { role: 'user', content: text });
+
+    // Anexa URLs das referências visuais à mensagem se existirem
+    const fileUrls = refs.map(r => r.url).filter(Boolean);
+    const refNotas = refs.filter(r => r.notas).map(r => `• ${r.nome || 'Ref'}: ${r.notas}`).join('\n');
+    const contentWithContext = refs.length > 0
+      ? `${text}\n\n[REFERÊNCIAS VISUAIS DO MEU ESTILO — ${refs.length} imagem(ns) anexada(s)${refNotas ? `:\n${refNotas}` : ''}]`
+      : text;
+
+    await base44.agents.addMessage(conv, {
+      role: 'user',
+      content: contentWithContext,
+      ...(fileUrls.length > 0 ? { file_urls: fileUrls } : {}),
+    });
     setSending(false);
   };
 
@@ -113,6 +127,10 @@ export default function ThumbDesigner() {
               {conv.metadata?.name || 'Sessão'}
             </button>
           ))}
+        </div>
+        {/* Galeria de referências */}
+        <div className="p-2 border-t border-border">
+          <ReferenciaGaleria onRefsChange={setRefs} />
         </div>
       </div>
 

@@ -1,0 +1,21 @@
+{
+  "name": "ReferenciaThumb",
+  "type": "object",
+  "properties": {
+    "url": {
+      "type": "string",
+      "description": "URL da imagem de refer\u00eancia"
+    },
+    "nome": {
+      "type": "string",
+      "description": "Nome ou descri\u00e7\u00e3o breve da refer\u00eancia"
+    },
+    "notas": {
+      "type": "string",
+      "description": "O que eu gosto nesta thumbnail (estilo, cores, composi\u00e7\u00e3o, etc.)"
+    }
+  },
+  "required": [
+    "url"
+  ]
+}
