@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Sparkles, Plus, ImageIcon, Wand2, Loader2, BookImage } from 'lucide-react';
+import { Send, Sparkles, Plus, ImageIcon, Wand2, Loader2, BookImage, History } from 'lucide-react';
 import MessageBubble from '../components/thumbdesigner/MessageBubble';
 import ReferenciaGaleria from '../components/thumbdesigner/ReferenciaGaleria';
+import HistoricoGeracoes from '../components/thumbdesigner/HistoricoGeracoes';
 import { useRoteiro } from '@/lib/RoteiroContext';
 
 export default function ThumbDesigner() {
@@ -14,7 +15,7 @@ export default function ThumbDesigner() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [refs, setRefs] = useState([]);
-  const [activeTab, setActiveTab] = useState('chat'); // 'chat' | 'referencias'
+  const [activeTab, setActiveTab] = useState('chat'); // 'chat' | 'referencias' | 'historico'
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -190,6 +191,20 @@ export default function ThumbDesigner() {
               </span>
             )}
           </button>
+          <button
+            onClick={() => setActiveTab('historico')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              activeTab === 'historico' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+            }`}
+          >
+            <History className="w-3.5 h-3.5" />
+            Histórico
+            {conversations.length > 0 && (
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${activeTab === 'historico' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-primary/20 text-primary'}`}>
+                {conversations.length}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Messages */}
@@ -256,6 +271,13 @@ export default function ThumbDesigner() {
         {activeTab === 'referencias' && (
           <div className="flex-1 overflow-y-auto p-4">
             <ReferenciaGaleria onRefsChange={setRefs} alwaysExpanded />
+          </div>
+        )}
+
+        {/* Painel de Histórico */}
+        {activeTab === 'historico' && (
+          <div className="flex-1 overflow-y-auto">
+            <HistoricoGeracoes conversations={conversations} />
           </div>
         )}
 
