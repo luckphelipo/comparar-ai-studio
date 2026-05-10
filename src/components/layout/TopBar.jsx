@@ -1,13 +1,19 @@
-import { Bell, Search, Sparkles } from 'lucide-react';
+import { Bell, Sparkles, Zap } from 'lucide-react';
 import FunnelSelector from './FunnelSelector';
 
 export default function TopBar({ title, subtitle }) {
   return (
     <header className="h-14 border-b border-border flex items-center justify-between px-6 bg-background/80 backdrop-blur-sm sticky top-0 z-30">
       <div className="flex items-center gap-3">
+        {/* Logo — só mobile */}
+        <div className="md:hidden flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center glow-blue flex-shrink-0">
+            <Zap className="w-3.5 h-3.5 text-primary-foreground" />
+          </div>
+        </div>
         <div>
           <h1 className="text-sm font-semibold text-foreground">{title}</h1>
-          {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+          {subtitle && <p className="text-xs text-muted-foreground hidden sm:block">{subtitle}</p>}
         </div>
       </div>
 
