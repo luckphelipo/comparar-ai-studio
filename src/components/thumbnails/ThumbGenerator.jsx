@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wand2, RefreshCw, Download, Sparkles, ImageIcon, Sliders, X, ChevronRight } from 'lucide-react';
+import { Wand2, RefreshCw, Download, Sparkles, ImageIcon, Sliders, X, ChevronRight, FileText, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { useRoteiro } from '@/lib/RoteiroContext';
 
 // 3 variações fixas
 const VARIACOES = [
@@ -58,14 +59,31 @@ const FUNNEL_DESC = {
 };
 
 export default function ThumbGenerator({ funnel = 'top', config = {} }) {
+  const { roteiroOriginal } = useRoteiro();
   const [showBriefing, setShowBriefing] = useState(false);
   const [briefing, setBriefing] = useState({ title: '', subject: '', visual: '', person: '' });
   const [thumbs, setThumbs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingIdx, setLoadingIdx] = useState(0);
+  const [importandoRoteiro, setImportandoRoteiro] = useState(false);
 
   const handleOpenBriefing = () => {
     setShowBriefing(true);
+  };
+
+  const handleImportarRoteiro = async () => {
+    if (!roteiroOriginal) return;
+    setImportandoRoteiro(true);
+    // Usa IA para extrair o assunto principal do roteiro
+    const resultado = await base44.integrations.Core.InvokeLLM({
+      prompt: `Leia o roteiro abaixo e extraia em UMA FRASE CURTA (máximo 15 palavras) o assunto/contexto principal do vídeo. Foque em elementos visuais concretos que aparecem no vídeo (locais, objetos, situações). Responda APENAS com a frase, sem introdução, sem aspas.\n\nTÍTULO: ${roteiroOriginal.title || ''}\n\nROTEIRO:\n${roteiroOriginal.text.slice(0, 1200)}`,
+    });
+    setBriefing(b => ({
+      ...b,
+      title: roteiroOriginal.title || '',
+      subject: typeof resultado === 'string' ? resultado.trim() : '',
+    }));
+    setImportandoRoteiro(false);
   };
 
   const handleGenerate = async () => {
@@ -123,6 +141,30 @@ export default function ThumbGenerator({ funnel = 'top', config = {} }) {
                   <X className="w-4 h-4 text-muted-foreground" />
                 </button>
               </div>
+
+              {/* Importar do último roteiro */}
+              {roteiroOriginal && (
+                <button
+                  onClick={handleImportarRoteiro}
+                  disabled={importandoRoteiro}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 bg-primary/10 hover:bg-primary/15 border border-primary/30 rounded-xl text-sm text-primary font-medium transition-all disabled:opacity-60"
+                >
+                  {importandoRoteiro ? (
+                    <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
+                  ) : (
+                    <FileText className="w-4 h-4 flex-shrink-0" />
+                  )}
+                  <div className="text-left flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-primary">
+                      {importandoRoteiro ? 'Extraindo assunto com IA...' : 'Usar último roteiro analisado'}
+                    </p>
+                    <p className="text-[11px] text-primary/70 truncate">
+                      {roteiroOriginal.title || 'Sem título'}
+                    </p>
+                  </div>
+                  {!importandoRoteiro && <ChevronRight className="w-3.5 h-3.5 flex-shrink-0 text-primary/60" />}
+                </button>
+              )}
 
               <div className="space-y-4">
                 <div className="space-y-1.5">
