@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Wand2, RefreshCw, Download, Sparkles, ImageIcon, Sliders, X, ChevronRight, FileText, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useRoteiro } from '@/lib/RoteiroContext';
+import { toast } from 'sonner';
 
 // 3 variações fixas
 const VARIACOES = [
@@ -59,7 +60,7 @@ const FUNNEL_DESC = {
 };
 
 export default function ThumbGenerator({ funnel = 'top', config = {} }) {
-  const { roteiroOriginal } = useRoteiro();
+  const { roteiroOriginal, resultado } = useRoteiro();
   const [showBriefing, setShowBriefing] = useState(false);
   const [briefing, setBriefing] = useState({ title: '', subject: '', visual: '', person: '' });
   const [thumbs, setThumbs] = useState([]);
@@ -142,8 +143,62 @@ export default function ThumbGenerator({ funnel = 'top', config = {} }) {
                 </button>
               </div>
 
-              {/* Importar do último roteiro */}
-              {roteiroOriginal && (
+              {/* Importar do último roteiro analisado */}
+              {roteiroOriginal && resultado && (
+                <div className="space-y-2">
+                  <button
+                    onClick={handleImportarRoteiro}
+                    disabled={importandoRoteiro}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 bg-primary/10 hover:bg-primary/15 border border-primary/30 rounded-xl text-sm text-primary font-medium transition-all disabled:opacity-60"
+                  >
+                    {importandoRoteiro ? (
+                      <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
+                    ) : (
+                      <FileText className="w-4 h-4 flex-shrink-0" />
+                    )}
+                    <div className="text-left flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-primary">
+                        {importandoRoteiro ? 'Extraindo assunto com IA...' : 'Usar último roteiro analisado'}
+                      </p>
+                      <p className="text-[11px] text-primary/70 truncate">
+                        {roteiroOriginal.title || 'Sem título'}
+                      </p>
+                    </div>
+                    {!importandoRoteiro && <ChevronRight className="w-3.5 h-3.5 flex-shrink-0 text-primary/60" />}
+                  </button>
+
+                  {/* Importar pontos principais da análise */}
+                  {resultado.pontos_fortes && (
+                    <button
+                      onClick={() => {
+                        const pontos = [
+                          ...(resultado.pontos_fortes || []).slice(0, 2),
+                          ...(resultado.sugestoes || []).slice(0, 2),
+                        ].join('; ');
+                        setBriefing(b => ({
+                          ...b,
+                          title: roteiroOriginal.title || b.title,
+                          visual: pontos.slice(0, 200),
+                        }));
+                        toast.success('Pontos principais importados!');
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 bg-highlight/10 hover:bg-highlight/15 border border-highlight/30 rounded-xl text-sm text-highlight font-medium transition-all"
+                    >
+                      <Sparkles className="w-4 h-4 flex-shrink-0" />
+                      <div className="text-left flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-highlight">Importar pontos-chave da análise</p>
+                        <p className="text-[11px] text-highlight/70 truncate">
+                          Score {resultado.score_geral} · {resultado.pontos_fortes.length} pontos fortes
+                        </p>
+                      </div>
+                      <ChevronRight className="w-3.5 h-3.5 flex-shrink-0 text-highlight/60" />
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Fallback: só roteiro sem análise */}
+              {roteiroOriginal && !resultado && (
                 <button
                   onClick={handleImportarRoteiro}
                   disabled={importandoRoteiro}
