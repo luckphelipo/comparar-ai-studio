@@ -11,6 +11,7 @@ import {
   Zap,
   ChevronRight,
   Palette,
+  Users,
 } from 'lucide-react';
 
 const navItems = [
@@ -20,6 +21,7 @@ const navItems = [
   { icon: ImageIcon, label: 'Thumb Battle', path: '/thumbnails' },
   { icon: Palette, label: 'Thumb Designer IA', path: '/thumb-designer', badge: 'AI' },
   { icon: Library, label: 'Biblioteca', path: '/biblioteca' },
+  { icon: Users, label: 'Biblioteca de Pessoas', path: '/biblioteca-pessoas' },
   { icon: Wand2, label: 'Assistente de Editor', path: '/editor', badge: 'AI' },
   { icon: Settings, label: 'Configurações', path: '/configuracoes' },
 ];

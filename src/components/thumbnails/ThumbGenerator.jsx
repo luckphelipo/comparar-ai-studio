@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wand2, RefreshCw, Download, Sparkles, ImageIcon, Sliders, X, ChevronRight, FileText, Loader2 } from 'lucide-react';
+import { Wand2, RefreshCw, Download, Sparkles, ImageIcon, Sliders, X, ChevronRight, FileText, Loader2, Users, Check } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useRoteiro } from '@/lib/RoteiroContext';
 import { toast } from 'sonner';
@@ -63,6 +63,12 @@ export default function ThumbGenerator({ funnel = 'top', config = {} }) {
   const { roteiroOriginal, resultado } = useRoteiro();
   const [showBriefing, setShowBriefing] = useState(false);
   const [briefing, setBriefing] = useState({ title: '', subject: '', visual: '', person: '' });
+  const [apresentadores, setApresentadores] = useState([]);
+  const [apresentadorSelecionado, setApresentadorSelecionado] = useState(null);
+
+  useEffect(() => {
+    base44.entities.Apresentador.list('-created_date').then(setApresentadores);
+  }, []);
   const [thumbs, setThumbs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingIdx, setLoadingIdx] = useState(0);
@@ -96,11 +102,23 @@ export default function ThumbGenerator({ funnel = 'top', config = {} }) {
     const funnelDesc = FUNNEL_DESC[funnel] || FUNNEL_DESC.top;
     const results = [];
 
+    // Monta a descrição da pessoa com base no apresentador selecionado
+    const personDesc = apresentadorSelecionado
+      ? `${apresentadorSelecionado.nome}${apresentadorSelecionado.descricao ? ` — ${apresentadorSelecionado.descricao}` : ''}`
+      : briefing.person;
+
+    const refImages = apresentadorSelecionado
+      ? [apresentadorSelecionado.foto_url, ...(apresentadorSelecionado.fotos_extras || [])].filter(Boolean)
+      : [];
+
     for (let i = 0; i < VARIACOES.length; i++) {
       setLoadingIdx(i + 1);
       const v = VARIACOES[i];
-      const prompt = v.buildPrompt({ ...briefing, funnelDesc });
-      const { url } = await base44.integrations.Core.GenerateImage({ prompt });
+      const prompt = v.buildPrompt({ ...briefing, person: personDesc, funnelDesc });
+      const { url } = await base44.integrations.Core.GenerateImage({
+        prompt,
+        ...(refImages.length > 0 ? { existing_image_urls: refImages } : {}),
+      });
       results.push({
         url,
         label: v.label,
@@ -262,11 +280,46 @@ export default function ThumbGenerator({ funnel = 'top', config = {} }) {
                   <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                     Personagem / Pessoa na Thumb <span className="text-xs font-normal text-muted-foreground/60">(opcional)</span>
                   </label>
+
+                  {/* Seletor de apresentadores */}
+                  {apresentadores.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] text-muted-foreground">Selecione da biblioteca:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {apresentadores.map((a) => {
+                          const sel = apresentadorSelecionado?.id === a.id;
+                          return (
+                            <button
+                              key={a.id}
+                              onClick={() => setApresentadorSelecionado(sel ? null : a)}
+                              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                                sel
+                                  ? 'bg-primary/20 border-primary/50 text-primary'
+                                  : 'bg-secondary/30 border-border text-muted-foreground hover:text-foreground hover:border-primary/30'
+                              }`}
+                            >
+                              <img src={a.foto_url} alt={a.nome} className="w-5 h-5 rounded-full object-cover flex-shrink-0" />
+                              {a.nome}
+                              {sel && <Check className="w-3 h-3" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {apresentadorSelecionado && (
+                        <p className="text-[11px] text-primary">
+                          ✓ Usando foto de {apresentadorSelecionado.nome} como referência visual
+                        </p>
+                      )}
+                      <p className="text-[11px] text-muted-foreground/60">ou descreva manualmente abaixo:</p>
+                    </div>
+                  )}
+
                   <input
                     value={briefing.person}
                     onChange={(e) => setBriefing(b => ({ ...b, person: e.target.value }))}
                     placeholder="Ex: homem jovem de camiseta preta, mulher viajante com mochila"
-                    className="w-full bg-secondary/40 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
+                    disabled={!!apresentadorSelecionado}
+                    className="w-full bg-secondary/40 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors disabled:opacity-40"
                   />
                 </div>
               </div>

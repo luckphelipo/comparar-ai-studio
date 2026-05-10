@@ -14,6 +14,7 @@ const pageMeta = {
   '/editor': { title: 'Assistente de Editor', subtitle: 'Assistência inteligente para edição de vídeo' },
   '/configuracoes': { title: 'Configurações', subtitle: 'Gerencie suas preferências e integrações' },
   '/thumb-designer': { title: 'Thumb Designer IA', subtitle: 'Agente especialista no estilo MrBeast · 3 variações · 1280×720px' },
+  '/biblioteca-pessoas': { title: 'Biblioteca de Pessoas', subtitle: 'Apresentadores disponíveis para usar nas thumbnails' },
 };
 
 export default function AppLayout() {
