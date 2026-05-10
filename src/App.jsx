@@ -15,6 +15,7 @@ import Thumbnails from './pages/Thumbnails';
 import Biblioteca from './pages/Biblioteca';
 import Editor from './pages/Editor';
 import Configuracoes from './pages/Configuracoes';
+import ThumbDesigner from './pages/ThumbDesigner';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -51,6 +52,7 @@ const AuthenticatedApp = () => {
         <Route path="/biblioteca" element={<Biblioteca />} />
         <Route path="/editor" element={<Editor />} />
         <Route path="/configuracoes" element={<Configuracoes />} />
+        <Route path="/thumb-designer" element={<ThumbDesigner />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
