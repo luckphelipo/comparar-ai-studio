@@ -25,14 +25,15 @@ const VARIACOES = [
     label: 'Sem Texto',
     badge: 'VISUAL',
     badgeColor: 'bg-blue-500/20 text-blue-400',
-    description: 'Apenas elementos visuais fotorrealistas, sem texto ou letras',
+    description: 'Expressão chocada, pessoa apontando para elemento, fundo icônico — sem nenhum texto',
     buildPrompt: ({ title, subject, visual, person, funnelDesc }) =>
-      `YouTube thumbnail 1280x720, estilo YouTube Brasil viral. ${funnelDesc}. ` +
-      `SEM TEXTO, SEM LETRAS, SEM PALAVRAS na imagem. Composição visual poderosa. ` +
-      `${person ? `Pessoa ${person} centralizada com expressão impactante, olhando para câmera.` : 'Pessoa em destaque centralizada, expressão impactante.'} ` +
-      `${visual ? `Elemento visual principal: ${visual} em destaque.` : ''} ` +
-      `Fundo fotorrealista relacionado a "${subject}", iluminação cinematográfica dramática. ` +
-      `Borda azul elétrica fina ao redor. Cores saturadas, alto contraste, composição que chama atenção no feed. Proporção 16:9, qualidade fotorrealista.`,
+      `YouTube thumbnail 1280x720, estilo MrBeast Brasil viral, SEM TEXTO, SEM LETRAS, SEM PALAVRAS. ` +
+      `${person ? `Pessoa ${person}` : 'Homem jovem'} com expressão de CHOQUE EXTREMO — boca aberta, olhos arregalados, sobrancelhas levantadas, apontando com o dedo indicador para um elemento na cena. ` +
+      `${visual ? `Elemento principal em destaque que a pessoa aponta: ${visual}, colocado de forma proeminente na composição.` : `Elemento relacionado a "${subject}" em destaque que a pessoa aponta.`} ` +
+      `Fundo fotorrealista icônico relacionado a "${subject}" — cenário real reconhecível, iluminação dourada dramática (golden hour ou luz cinematográfica). ` +
+      `Composição: pessoa ocupa 60% direito da tela, elemento apontado no centro-esquerda, fundo desfocado mas reconhecível. ` +
+      `Borda fina com gradiente azul-amarelo ao redor da imagem (estilo YouTube Brasil). ` +
+      `Cores altamente saturadas, alto contraste, fotorrealismo profissional. Proporção 16:9.`,
   },
   {
     id: 'agressiva',
