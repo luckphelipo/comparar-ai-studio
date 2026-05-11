@@ -15,6 +15,7 @@ const pageMeta = {
   '/configuracoes': { title: 'Configurações', subtitle: 'Gerencie suas preferências e integrações' },
   '/thumb-designer': { title: 'Thumb Designer IA', subtitle: 'Agente especialista no estilo MrBeast · 3 variações · 1280×720px' },
   '/biblioteca-pessoas': { title: 'Biblioteca de Pessoas', subtitle: 'Apresentadores disponíveis para usar nas thumbnails' },
+  '/tendencias': { title: 'Análise de Tendências', subtitle: 'Descubra o que está em alta nas thumbnails do seu nicho' },
 };
 
 export default function AppLayout() {

@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Palette,
   Users,
+  TrendingUp,
 } from 'lucide-react';
 
 const navItems = [
@@ -22,6 +23,7 @@ const navItems = [
   { icon: Palette, label: 'Thumb Designer IA', path: '/thumb-designer', badge: 'AI' },
   { icon: Library, label: 'Biblioteca', path: '/biblioteca' },
   { icon: Users, label: 'Biblioteca de Pessoas', path: '/biblioteca-pessoas' },
+  { icon: TrendingUp, label: 'Análise de Tendências', path: '/tendencias', badge: 'NEW' },
   { icon: Wand2, label: 'Assistente de Editor', path: '/editor', badge: 'AI' },
   { icon: Settings, label: 'Configurações', path: '/configuracoes' },
 ];

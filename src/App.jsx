@@ -17,6 +17,7 @@ import Editor from './pages/Editor';
 import Configuracoes from './pages/Configuracoes';
 import ThumbDesigner from './pages/ThumbDesigner';
 import BibliotecaPessoas from './pages/BibliotecaPessoas';
+import AnaliseTendencias from './pages/AnaliseTendencias';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -55,6 +56,7 @@ const AuthenticatedApp = () => {
         <Route path="/configuracoes" element={<Configuracoes />} />
         <Route path="/thumb-designer" element={<ThumbDesigner />} />
         <Route path="/biblioteca-pessoas" element={<BibliotecaPessoas />} />
+        <Route path="/tendencias" element={<AnaliseTendencias />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
