@@ -9,11 +9,6 @@ Deno.serve(async (req) => {
 
     const API_KEY = Deno.env.get("wavespeed");
     
-    // Atualiza status para "processando"
-    if (jobId) {
-      await base44.asServiceRole.entities.Job.update(jobId, { status: 'processando', progresso: 15 });
-    }
-
     const headers = {
       "Authorization": `Bearer ${API_KEY}`,
       "Content-Type": "application/json",
