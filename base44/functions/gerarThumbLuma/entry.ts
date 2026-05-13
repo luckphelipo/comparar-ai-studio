@@ -1,6 +1,6 @@
 Deno.serve(async (req) => {
   try {
-    const { prompt, image_refs } = await req.json();
+    const { prompt, image_refs, style_refs } = await req.json();
 
     if (!prompt) return Response.json({ error: 'prompt is required' }, { status: 400 });
 
@@ -23,26 +23,50 @@ Deno.serve(async (req) => {
       throw new Error("Timeout: geração demorou mais de 2 minutos");
     };
 
-    // 1. Gerar a thumbnail com GPT Image 2
-    const genRes = await fetch("https://api.wavespeed.ai/api/v3/openai/gpt-image-2/text-to-image", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        prompt,
-        aspect_ratio: "16:9",
-        resolution: "1k",
-        quality: "medium",
-        output_format: "jpeg",
-        enable_sync_mode: false,
-      }),
-    });
+    let thumbUrl;
 
-    const genData = await genRes.json();
-    if (!genRes.ok || !genData.data?.id) {
-      return Response.json({ error: genData?.message || "Erro ao criar geração" }, { status: 500 });
+    // 1. Gerar a thumbnail — com referências de estilo (Edit) ou sem (Text-to-Image)
+    if (style_refs && style_refs.length > 0) {
+      // Usa GPT Image 2 Edit com até 3 referências de estilo visual
+      const refsToUse = style_refs.slice(0, 3);
+      const editStyleRes = await fetch("https://api.wavespeed.ai/api/v3/openai/gpt-image-2/edit", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          images: refsToUse,
+          prompt: `Create a brand new YouTube thumbnail inspired by the visual style, composition, and color palette of the reference images. Do NOT copy the content — generate original content for this topic: ${prompt}`,
+          aspect_ratio: "16:9",
+          resolution: "1k",
+          quality: "medium",
+          output_format: "jpeg",
+          enable_sync_mode: false,
+        }),
+      });
+      const editStyleData = await editStyleRes.json();
+      if (!editStyleRes.ok || !editStyleData.data?.id) {
+        return Response.json({ error: editStyleData?.message || "Erro ao criar geração com referências" }, { status: 500 });
+      }
+      thumbUrl = await pollResult(editStyleData.data.id);
+    } else {
+      // Sem referências: geração direta text-to-image
+      const genRes = await fetch("https://api.wavespeed.ai/api/v3/openai/gpt-image-2/text-to-image", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          prompt,
+          aspect_ratio: "16:9",
+          resolution: "1k",
+          quality: "medium",
+          output_format: "jpeg",
+          enable_sync_mode: false,
+        }),
+      });
+      const genData = await genRes.json();
+      if (!genRes.ok || !genData.data?.id) {
+        return Response.json({ error: genData?.message || "Erro ao criar geração" }, { status: 500 });
+      }
+      thumbUrl = await pollResult(genData.data.id);
     }
-
-    let thumbUrl = await pollResult(genData.data.id);
 
     // 2. Se tiver foto do apresentador, usar GPT Image 2 Edit para aplicar o rosto
     if (image_refs && image_refs.length > 0) {

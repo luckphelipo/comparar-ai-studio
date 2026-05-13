@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, RefreshCw, Download, Users, Check, X, ChevronRight, Loader2, Upload, ImageIcon } from 'lucide-react';
+import { Sparkles, RefreshCw, Download, Users, Check, X, ChevronRight, Loader2, Upload, ImageIcon, BookImage } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRoteiro } from '@/lib/RoteiroContext';
 
@@ -54,6 +54,8 @@ export default function GeradorComFaceSwap() {
   const [fotoAvulsa, setFotoAvulsa] = useState(null); // URL de foto enviada manualmente
   const [uploadingFoto, setUploadingFoto] = useState(false);
 
+  const [styleRefs, setStyleRefs] = useState([]);
+
   const [title, setTitle] = useState('');
   const [subject, setSubject] = useState('');
   const [visual, setVisual] = useState('');
@@ -64,6 +66,10 @@ export default function GeradorComFaceSwap() {
 
   useEffect(() => {
     base44.entities.Apresentador.list('-created_date').then(setApresentadores);
+    // Busca referências de estilo salvas na biblioteca
+    base44.entities.ReferenciaThumb.list('-created_date').then((refs) => {
+      setStyleRefs(refs.map(r => r.url).filter(Boolean));
+    });
   }, []);
 
   useEffect(() => {
@@ -107,6 +113,7 @@ export default function GeradorComFaceSwap() {
       const response = await base44.functions.invoke('gerarThumbLuma', {
         prompt,
         ...(faceImageUrl ? { image_refs: [faceImageUrl] } : {}),
+        ...(styleRefs.length > 0 ? { style_refs: styleRefs.slice(0, 3) } : {}),
       });
 
       const url = response.data?.url;
@@ -139,6 +146,15 @@ export default function GeradorComFaceSwap() {
           <Sparkles className="w-4 h-4 text-primary" />
           <h3 className="text-sm font-semibold text-foreground">Gerador com Face Swap</h3>
           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">Wavespeed</span>
+        </div>
+
+        {/* Indicador de referências de estilo */}
+        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs ${styleRefs.length > 0 ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-secondary/30 border-border text-muted-foreground'}`}>
+          <BookImage className="w-3.5 h-3.5 flex-shrink-0" />
+          {styleRefs.length > 0
+            ? <span><strong>{styleRefs.length}</strong> referência{styleRefs.length > 1 ? 's' : ''} de estilo detectada{styleRefs.length > 1 ? 's' : ''} — serão usadas na geração automaticamente</span>
+            : <span>Nenhuma referência de estilo na biblioteca · <a href="/biblioteca" className="text-primary hover:underline">Adicionar referências →</a></span>
+          }
         </div>
 
         {/* Título e Assunto */}
