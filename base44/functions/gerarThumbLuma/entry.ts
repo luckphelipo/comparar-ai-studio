@@ -28,8 +28,11 @@ Deno.serve(async (req) => {
 
     let thumbUrl;
 
+    // Se é só aplicar personagem (prompt = "Apply face swap"), pula direto para o face swap
+    const isOnlyFaceSwap = prompt === 'Apply face swap';
+
     // 1. Gerar a thumbnail — com referências de estilo (Edit) ou sem (Text-to-Image)
-    if (style_refs && style_refs.length > 0) {
+    if (!isOnlyFaceSwap && style_refs && style_refs.length > 0) {
       // Usa GPT Image 2 Edit com até 3 referências de estilo visual
       const refsToUse = style_refs.slice(0, 3);
       const editStyleRes = await fetch("https://api.wavespeed.ai/api/v3/openai/gpt-image-2/edit", {
@@ -50,7 +53,7 @@ Deno.serve(async (req) => {
         return Response.json({ error: editStyleData?.message || "Erro ao criar geração com referências" }, { status: 500 });
       }
       thumbUrl = await pollResult(editStyleData.data.id);
-    } else {
+    } else if (!isOnlyFaceSwap) {
       // Sem referências: geração direta text-to-image
       const genRes = await fetch("https://api.wavespeed.ai/api/v3/openai/gpt-image-2/text-to-image", {
         method: "POST",
@@ -69,10 +72,13 @@ Deno.serve(async (req) => {
         return Response.json({ error: genData?.message || "Erro ao criar geração" }, { status: 500 });
       }
       thumbUrl = await pollResult(genData.data.id);
+    } else if (isOnlyFaceSwap && style_refs && style_refs.length > 0) {
+      // Se é só face swap, a imagem base vem em style_refs[0]
+      thumbUrl = style_refs[0];
     }
 
     // 2. Se tiver foto do apresentador, usar GPT Image 2 Edit para aplicar o rosto
-    if (image_refs && image_refs.length > 0) {
+    if (image_refs && image_refs.length > 0 && thumbUrl) {
       const editRes = await fetch("https://api.wavespeed.ai/api/v3/openai/gpt-image-2/edit", {
         method: "POST",
         headers,

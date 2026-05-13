@@ -29,6 +29,8 @@ export default function ThumbCreator() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [resumindoRoteiro, setResumindoRoteiro] = useState(false);
+  const [ultimaThumb, setUltimaThumb] = useState(null);
+  const [aplicandoPersonagem, setAplicandoPersonagem] = useState(false);
 
   useEffect(() => {
     base44.entities.Apresentador.list('-created_date').then(setApresentadores);
@@ -96,12 +98,10 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
     if (textType === 'com') {
       return `YouTube thumbnail 1280x720. ${funnelDesc}. ` +
         `Texto ENORME amarelo negrito, 40% esquerda, contorno preto. ` +
-        `${comPersonagem && personDesc ? `Rosto ${personDesc} direita.` : comPersonagem ? 'Rosto direita, expressão intensa.' : ''} ` +
         `${visual ? `${visual} em destaque. ` : ''} ` +
         `Fundo fotorrealista de "${subject}", alta saturação, contraste máximo, impacto visual.`;
     } else {
       return `YouTube thumbnail 1280x720, SEM TEXTO. ${funnelDesc}. ` +
-        `${comPersonagem && personDesc ? `Pessoa ${personDesc} com choque extremo — boca aberta, olhos arregalados, apontando.` : comPersonagem ? 'Pessoa com expressão de choque extremo.' : ''} ` +
         `${visual ? `${visual}` : `Elemento de "${subject}"`} em destaque. ` +
         `Fundo fotorrealista, cores saturadas, contraste máximo, impacto visual.`;
     }
@@ -114,18 +114,14 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
     }
 
     const jobId = `thumb_${Date.now()}`;
-    registerJob(jobId, 'thumbnail', { title, subject, visual, comPersonagem });
+    registerJob(jobId, 'thumbnail', { title, subject, visual });
     setLoading(true);
     setProgress(10);
 
-    const faceImageUrl = comPersonagem ? (apresentadorSelecionado?.foto_url || fotoAvulsa || null) : null;
-    const personDesc = comPersonagem && apresentadorSelecionado
-      ? apresentadorSelecionado.descricao || apresentadorSelecionado.nome
-      : '';
-
+    // Sempre gera SEM personagem na primeira etapa
+    const personDesc = '';
     const prompt = buildPrompt({ title, subject, visual, personDesc });
 
-    // Simula aumento gradual de progresso
     const progressInterval = setInterval(() => {
       setProgress(prev => Math.min(prev + Math.random() * 20, 90));
     }, 1000);
@@ -133,7 +129,6 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
     const response = await base44.functions.invoke('gerarThumbLuma', {
       prompt,
       jobId,
-      ...(faceImageUrl ? { image_refs: [faceImageUrl] } : {}),
       ...(refsParaFunnel.length > 0 ? { style_refs: refsParaFunnel.slice(0, 3) } : {}),
     });
 
@@ -144,11 +139,52 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
       toast.error('Erro ao gerar thumbnail');
       setLoading(false);
     } else {
-      setThumbs([{ url, faceSwapAplicado: !!faceImageUrl }]);
+      setUltimaThumb(url);
+      setThumbs([{ url, faceSwapAplicado: false }]);
       setProgress(100);
       setLoading(false);
     }
     setProgress(0);
+  };
+
+  const handleAplicarPersonagem = async () => {
+    if (!ultimaThumb) {
+      toast.error('Nenhuma thumbnail gerada para aplicar personagem.');
+      return;
+    }
+
+    const faceImageUrl = apresentadorSelecionado?.foto_url || fotoAvulsa;
+    if (!faceImageUrl) {
+      toast.error('Selecione um apresentador ou envie uma foto.');
+      return;
+    }
+
+    setAplicandoPersonagem(true);
+    setProgress(10);
+
+    const progressInterval = setInterval(() => {
+      setProgress(prev => Math.min(prev + Math.random() * 20, 90));
+    }, 1000);
+
+    const response = await base44.functions.invoke('gerarThumbLuma', {
+      prompt: 'Apply face swap',
+      image_refs: [faceImageUrl],
+      style_refs: [ultimaThumb],
+    });
+
+    clearInterval(progressInterval);
+
+    const url = response.data?.url;
+    if (!url) {
+      toast.error('Erro ao aplicar personagem');
+    } else {
+      setUltimaThumb(url);
+      setThumbs([{ url, faceSwapAplicado: true }]);
+      setProgress(100);
+      toast.success('Personagem aplicado com sucesso!');
+    }
+    setProgress(0);
+    setAplicandoPersonagem(false);
   };
 
   const handleGerarVariacoes = async () => {
@@ -512,14 +548,43 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
                 ))}
               </div>
 
-              {!loading && (
-                <button
-                  onClick={handleGerarVariacoes}
-                  className="w-full py-3 bg-secondary/60 hover:bg-secondary border border-border rounded-xl text-sm font-semibold text-foreground transition-all"
-                >
-                  <Plus className="w-4 h-4 inline mr-2" />
-                  Gerar Variações
-                </button>
+              {!loading && !aplicandoPersonagem && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleGerarVariacoes}
+                    className="flex-1 py-3 bg-secondary/60 hover:bg-secondary border border-border rounded-xl text-sm font-semibold text-foreground transition-all"
+                  >
+                    <Plus className="w-4 h-4 inline mr-2" />
+                    Gerar Variações
+                  </button>
+                  {comPersonagem && (apresentadorSelecionado || fotoAvulsa) && !thumbs[0]?.faceSwapAplicado && (
+                    <button
+                      onClick={handleAplicarPersonagem}
+                      className="flex-1 py-3 bg-primary hover:bg-primary/90 border border-primary rounded-xl text-sm font-semibold text-primary-foreground transition-all"
+                    >
+                      👤 Aplicar Personagem
+                    </button>
+                  )}
+                </div>
+              )}
+              {aplicandoPersonagem && (
+                <div className="flex items-center justify-center py-8">
+                  <div className="flex flex-col items-center gap-3 w-full">
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                    <p className="text-sm text-muted-foreground">Aplicando personagem à thumbnail...</p>
+                    <div className="w-full max-w-xs">
+                      <div className="bg-secondary/30 rounded-full h-2 overflow-hidden">
+                        <motion.div
+                          className="h-full bg-gradient-to-r from-primary to-primary/50"
+                          initial={{ width: '0%' }}
+                          animate={{ width: `${progress}%` }}
+                          transition={{ duration: 0.3 }}
+                        />
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-2 text-center font-mono">{progress}%</p>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           )}
