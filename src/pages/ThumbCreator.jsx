@@ -5,11 +5,11 @@ import { Sparkles, Plus, ImageIcon, Wand2, Loader2, Check, X, Upload } from 'luc
 import ReferenciaGaleria from '../components/thumbdesigner/ReferenciaGaleria';
 import { useRoteiro } from '@/lib/RoteiroContext';
 import { useJobs } from '@/lib/JobContext';
-import { useJobProgress } from '@/hooks/useJobProgress';
 import { toast } from 'sonner';
 
 export default function ThumbCreator() {
   const { roteiroOriginal } = useRoteiro();
+  const { registerJob, setCurrentJobId } = useJobs();
   const [refs, setRefs] = useState([]);
   
   // Gerador
@@ -113,6 +113,9 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
       return;
     }
 
+    const jobId = `thumb_${Date.now()}`;
+    registerJob(jobId, 'thumbnail', { title, subject, visual, comPersonagem });
+    setCurrentJobId(jobId);
     setLoading(true);
     setProgress(10);
 
@@ -130,6 +133,7 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
 
     const response = await base44.functions.invoke('gerarThumbLuma', {
       prompt,
+      jobId,
       ...(faceImageUrl ? { image_refs: [faceImageUrl] } : {}),
       ...(refsParaFunnel.length > 0 ? { style_refs: refsParaFunnel.slice(0, 3) } : {}),
     });
@@ -140,6 +144,7 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
     if (!url) {
       toast.error('Erro ao gerar thumbnail');
       setLoading(false);
+      setCurrentJobId(null);
     } else {
       setThumbs([{ url, faceSwapAplicado: !!faceImageUrl }]);
       setProgress(100);
@@ -154,6 +159,9 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
       return;
     }
 
+    const jobId = `thumb_variations_${Date.now()}`;
+    registerJob(jobId, 'thumbnail', { title, subject, visual, comPersonagem });
+    setCurrentJobId(jobId);
     setLoading(true);
     setProgress(10);
 
@@ -178,6 +186,7 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
       
       const response = await base44.functions.invoke('gerarThumbLuma', {
         prompt: typePrompt,
+        jobId,
         ...(faceImageUrl ? { image_refs: [faceImageUrl] } : {}),
         ...(refsParaFunnel.length > 0 ? { style_refs: refsParaFunnel.slice(0, 3) } : {}),
       });
