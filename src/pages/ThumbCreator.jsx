@@ -122,22 +122,20 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
 
   const buildPrompt = ({ title, subject, visual, personDesc }) => {
     const funnelDesc = funnel === 'topo' 
-      ? 'thumbnail viral de topo de funil, emoção, curiosidade e alto CTR'
-      : 'thumbnail de fundo de funil, autoridade, confiança e prova social';
+      ? 'viral, emoção, curiosidade, alto CTR'
+      : 'autoridade, confiança, prova social';
     
     if (textType === 'com') {
-      return `YouTube thumbnail 1280x720, estilo YouTube Brasil viral. ${funnelDesc}. ` +
-        `Texto ENORME em negrito ocupando 40% da tela à esquerda, cor amarelo vibrante com contorno preto. ` +
-        `${comPersonagem && personDesc ? `Pessoa ${personDesc} posicionada à direita, expressão intensa olhando para câmera.` : comPersonagem ? 'Pessoa em destaque à direita, expressão intensa.' : ''} ` +
-        `${visual ? `Elemento visual em destaque: ${visual}.` : ''} ` +
-        `Fundo fotorrealista relacionado a "${subject}", iluminação dramática com leve desfoque. ` +
-        `Alta saturação, alto contraste, impacto visual imediato. Proporção 16:9, qualidade fotorrealista.`;
+      return `YouTube thumbnail 1280x720. ${funnelDesc}. ` +
+        `Texto ENORME amarelo negrito, 40% esquerda, contorno preto. ` +
+        `${comPersonagem && personDesc ? `Rosto ${personDesc} direita.` : comPersonagem ? 'Rosto direita, expressão intensa.' : ''} ` +
+        `${visual ? `${visual} em destaque. ` : ''} ` +
+        `Fundo fotorrealista de "${subject}", alta saturação, contraste máximo, impacto visual.`;
     } else {
-      return `YouTube thumbnail 1280x720, estilo MrBeast Brasil viral, SEM TEXTO, SEM LETRAS. ` +
-        `${comPersonagem && personDesc ? `Pessoa ${personDesc}` : comPersonagem ? 'Homem jovem' : ''} ${comPersonagem ? 'com expressão de CHOQUE EXTREMO — boca aberta, olhos arregalados, apontando com o dedo indicador.' : ''} ` +
-        `${visual ? `Elemento principal: ${visual}, colocado de forma proeminente.` : `Elemento relacionado a "${subject}" em destaque.`} ` +
-        `Fundo fotorrealista icônico relacionado a "${subject}", iluminação dourada dramática. ` +
-        `Cores altamente saturadas, alto contraste, fotorrealismo profissional. Proporção 16:9.`;
+      return `YouTube thumbnail 1280x720, SEM TEXTO. ${funnelDesc}. ` +
+        `${comPersonagem && personDesc ? `Pessoa ${personDesc} com choque extremo — boca aberta, olhos arregalados, apontando.` : comPersonagem ? 'Pessoa com expressão de choque extremo.' : ''} ` +
+        `${visual ? `${visual}` : `Elemento de "${subject}"`} em destaque. ` +
+        `Fundo fotorrealista, cores saturadas, contraste máximo, impacto visual.`;
     }
   };
 
