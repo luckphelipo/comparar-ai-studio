@@ -57,7 +57,8 @@ export default function GerenciadorCreditos() {
       setEditingId(null);
       toast.success('Créditos e análises atualizados com sucesso');
     } catch (error) {
-      toast.error('Erro ao atualizar');
+      console.error('Erro ao atualizar:', error);
+      toast.error('Erro ao atualizar: ' + (error.message || 'Tente novamente'));
     }
   };
 
