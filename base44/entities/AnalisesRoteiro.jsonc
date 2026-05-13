@@ -1,0 +1,31 @@
+{
+  "name": "AnalisesRoteiro",
+  "type": "object",
+  "properties": {
+    "titulo": {
+      "type": "string",
+      "description": "T\u00edtulo do roteiro analisado"
+    },
+    "funil": {
+      "type": "string",
+      "enum": [
+        "topo",
+        "fundo"
+      ],
+      "description": "Tipo de funil da an\u00e1lise"
+    },
+    "score_geral": {
+      "type": "number",
+      "description": "Pontua\u00e7\u00e3o geral da an\u00e1lise"
+    },
+    "resumo": {
+      "type": "string",
+      "description": "Resumo da an\u00e1lise realizada"
+    }
+  },
+  "required": [
+    "titulo",
+    "funil",
+    "score_geral"
+  ]
+}

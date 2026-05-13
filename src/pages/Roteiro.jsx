@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import RoteiroInput from '../components/roteiro/RoteiroInput';
 import RoteiroResultado from '../components/roteiro/RoteiroResultado';
 import RoteiroOtimizado from '../components/roteiro/RoteiroOtimizado';
+import DistribuicaoFunnelChart from '../components/roteiro/DistribuicaoFunnelChart';
 
 export default function Roteiro() {
   const { funnel, config } = useFunnel();
@@ -139,6 +140,19 @@ Responde APENAS com um JSON válido, sem markdown, sem explicações fora do JSO
     setRoteiroOriginal({ title, text });
     setRoteiroOtimizado(null);
     setSugestoesTitulo(null);
+
+    // Salvar análise no histórico
+    try {
+      await base44.entities.AnalisesRoteiro.create({
+        titulo: title || 'Roteiro sem título',
+        funil: funnel,
+        score_geral: result.score_geral,
+        resumo: result.resumo
+      });
+    } catch (error) {
+      console.error('Erro ao salvar análise:', error);
+    }
+
     setLoading(false);
   };
 
@@ -279,9 +293,17 @@ Responde APENAS com o roteiro reescrito, sem introduções, sem explicações, s
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        <RoteiroInput onAnalyze={handleAnalyze} loading={loading} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div className="lg:col-span-2">
+          <RoteiroInput onAnalyze={handleAnalyze} loading={loading} />
+        </div>
 
+        <div className="lg:col-span-1">
+          <DistribuicaoFunnelChart />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         <div>
           {!resultado && !loading && (
             <div className="flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed border-border rounded-xl">
