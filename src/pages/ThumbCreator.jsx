@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Plus, ImageIcon, Wand2, Loader2, Check, X, Upload } from 'lucide-react';
 import ReferenciaGaleria from '../components/thumbdesigner/ReferenciaGaleria';
+import CreditosBanner from '../components/thumbdesigner/CreditosBanner';
 import { useRoteiro } from '@/lib/RoteiroContext';
 import { useJobs } from '@/lib/JobContext';
 import { toast } from 'sonner';
@@ -32,11 +33,16 @@ export default function ThumbCreator() {
   const [ultimaThumb, setUltimaThumb] = useState(null);
   const [aplicandoPersonagem, setAplicandoPersonagem] = useState(false);
   const [expressaoFacial, setExpressaoFacial] = useState('neutra');
+  const [userCreditos, setUserCreditos] = useState(null);
 
   useEffect(() => {
     base44.entities.Apresentador.list('-created_date').then(setApresentadores);
     base44.entities.ReferenciaThumb.list('-created_date').then((allRefs) => {
       setRefs(allRefs);
+    });
+    // Carregar créditos do usuário
+    base44.auth.me().then((user) => {
+      setUserCreditos(user?.creditos || 0);
     });
   }, []);
 
@@ -134,6 +140,11 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
       return;
     }
 
+    if (userCreditos <= 0) {
+      toast.error('Você não tem créditos disponíveis para gerar thumbnails.');
+      return;
+    }
+
     const jobId = `thumb_${Date.now()}`;
     registerJob(jobId, 'thumbnail', { title, subject, visual });
     setLoading(true);
@@ -155,13 +166,22 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
 
     const url = response.data?.url;
     if (!url) {
-      toast.error('Erro ao gerar thumbnail');
+      const errorMsg = response.data?.error || 'Erro ao gerar thumbnail';
+      if (errorMsg.includes('Saldo insuficiente')) {
+        toast.error('Você não tem créditos disponíveis.');
+        setUserCreditos(0);
+      } else {
+        toast.error(errorMsg);
+      }
       setLoading(false);
     } else {
       setUltimaThumb(url);
       setThumbs([{ url, faceSwapAplicado: false }]);
       setProgress(100);
       setLoading(false);
+      // Atualizar créditos
+      setUserCreditos(prev => Math.max(0, (prev || 0) - 1));
+      toast.success('Thumbnail gerada com sucesso!');
     }
     setProgress(0);
   };
@@ -262,6 +282,9 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Créditos */}
+      <CreditosBanner />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -397,7 +420,7 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
         <div className="flex gap-2 pt-3 border-t border-border">
           <button
             onClick={handleGerarUma}
-            disabled={loading || !title.trim() || !subject.trim()}
+            disabled={loading || !title.trim() || !subject.trim() || (userCreditos || 0) <= 0}
             className="flex-1 flex items-center justify-center gap-2 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground rounded-xl font-semibold text-sm transition-all glow-blue"
           >
             {loading ? (

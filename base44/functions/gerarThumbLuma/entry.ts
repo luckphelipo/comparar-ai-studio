@@ -7,6 +7,23 @@ Deno.serve(async (req) => {
 
     if (!prompt) return Response.json({ error: 'prompt is required' }, { status: 400 });
 
+    // Validar autenticação e créditos
+    const user = await base44.auth.me();
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Verificar se tem créditos (só descontar se NÃO for face swap direto)
+    const isOnlyFaceSwap = prompt === 'Apply face swap';
+    if (!isOnlyFaceSwap) {
+      const userCreditos = user.creditos || 0;
+      if (userCreditos <= 0) {
+        return Response.json({ error: 'Saldo insuficiente. Você não tem créditos disponíveis.' }, { status: 402 });
+      }
+      // Descontar 1 crédito
+      await base44.auth.updateMe({ creditos: userCreditos - 1 });
+    }
+
     const API_KEY = Deno.env.get("wavespeed");
     
     const headers = {
@@ -27,9 +44,6 @@ Deno.serve(async (req) => {
     };
 
     let thumbUrl;
-
-    // Se é só aplicar personagem (prompt = "Apply face swap"), pula direto para o face swap
-    const isOnlyFaceSwap = prompt === 'Apply face swap';
 
     // 1. Gerar a thumbnail — com referências de estilo (Edit) ou sem (Text-to-Image)
     if (!isOnlyFaceSwap && style_refs && style_refs.length > 0) {

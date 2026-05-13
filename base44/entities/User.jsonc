@@ -1,0 +1,23 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "description": "The role of the user in the app",
+      "enum": [
+        "admin",
+        "user"
+      ],
+      "default": "user"
+    },
+    "creditos": {
+      "type": "number",
+      "description": "N\u00famero de cr\u00e9ditos dispon\u00edveis para gerar thumbnails",
+      "default": 10
+    }
+  },
+  "required": [
+    "role"
+  ]
+}
