@@ -102,16 +102,23 @@ export default function ThumbGenerator({ funnel = 'top', config = {} }) {
     const funnelDesc = FUNNEL_DESC[funnel] || FUNNEL_DESC.top;
     const results = [];
 
-    // Monta a descrição da pessoa com base no apresentador selecionado
+    // Fotos do apresentador para character_ref (Luma)
+    const imageRefs = apresentadorSelecionado
+      ? [apresentadorSelecionado.foto_url, ...(apresentadorSelecionado.fotos_extras || [])].filter(Boolean)
+      : [];
+
     const personDesc = apresentadorSelecionado
-      ? `uma pessoa com as seguintes características físicas: ${apresentadorSelecionado.descricao || apresentadorSelecionado.nome}. Reproduza fielmente a aparência desta pessoa na thumbnail.`
+      ? apresentadorSelecionado.descricao || apresentadorSelecionado.nome
       : briefing.person;
 
     for (let i = 0; i < VARIACOES.length; i++) {
       setLoadingIdx(i + 1);
       const v = VARIACOES[i];
       const prompt = v.buildPrompt({ ...briefing, person: personDesc, funnelDesc });
-      const response = await base44.functions.invoke('gerarThumbLuma', { prompt });
+      const response = await base44.functions.invoke('gerarThumbLuma', {
+        prompt,
+        ...(imageRefs.length > 0 ? { image_refs: imageRefs } : {}),
+      });
       const { url } = response.data;
       results.push({
         url,
