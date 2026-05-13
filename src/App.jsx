@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import { FunnelProvider } from '@/lib/FunnelContext';
 import { RoteiroProvider } from '@/lib/RoteiroContext';
+import { JobProvider } from '@/lib/JobContext';
 import AppLayout from './components/layout/AppLayout';
 import Dashboard from './pages/Dashboard';
 import Roteiro from './pages/Roteiro.jsx';
@@ -68,12 +69,14 @@ function App() {
     <AuthProvider>
       <FunnelProvider>
         <RoteiroProvider>
+        <JobProvider>
         <QueryClientProvider client={queryClientInstance}>
           <Router>
             <AuthenticatedApp />
           </Router>
           <Toaster />
         </QueryClientProvider>
+        </JobProvider>
         </RoteiroProvider>
       </FunnelProvider>
     </AuthProvider>

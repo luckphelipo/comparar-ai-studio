@@ -1,0 +1,49 @@
+{
+  "name": "Job",
+  "type": "object",
+  "properties": {
+    "job_id": {
+      "type": "string",
+      "description": "Identificador \u00fanico do job"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "thumbnail",
+        "roteiro"
+      ],
+      "description": "Tipo de tarefa"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "iniciado",
+        "processando",
+        "concluido",
+        "erro"
+      ],
+      "default": "iniciado",
+      "description": "Status atual da tarefa"
+    },
+    "progresso": {
+      "type": "number",
+      "description": "Percentual de progresso (0-100)"
+    },
+    "resultado": {
+      "type": "object",
+      "description": "Resultado final da tarefa (URL de imagem, texto, etc)"
+    },
+    "erro": {
+      "type": "string",
+      "description": "Mensagem de erro se a tarefa falhar"
+    },
+    "parametros": {
+      "type": "object",
+      "description": "Par\u00e2metros iniciais da tarefa"
+    }
+  },
+  "required": [
+    "job_id",
+    "tipo"
+  ]
+}

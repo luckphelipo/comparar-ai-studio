@@ -4,10 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Plus, ImageIcon, Wand2, Loader2, Check, X, Upload } from 'lucide-react';
 import ReferenciaGaleria from '../components/thumbdesigner/ReferenciaGaleria';
 import { useRoteiro } from '@/lib/RoteiroContext';
+import { useJobs } from '@/lib/JobContext';
+import { useJobProgress } from '@/hooks/useJobProgress';
 import { toast } from 'sonner';
 
 export default function ThumbCreator() {
   const { roteiroOriginal } = useRoteiro();
+  const { registerJob, getJob, activeJobs } = useJobs();
   const [refs, setRefs] = useState([]);
   
   // Gerador
@@ -27,11 +30,20 @@ export default function ThumbCreator() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [resumindoRoteiro, setResumindoRoteiro] = useState(false);
+  const [currentJobId, setCurrentJobId] = useState(null);
+  const { job: monitoredJob } = useJobProgress(currentJobId);
 
   useEffect(() => {
     base44.entities.Apresentador.list('-created_date').then(setApresentadores);
     base44.entities.ReferenciaThumb.list('-created_date').then((allRefs) => {
       setRefs(allRefs);
+    });
+    
+    // Restaura jobs ativos do localStorage
+    Object.entries(activeJobs).forEach(([jobId, job]) => {
+      if (job.tipo === 'thumbnail' && job.status !== 'concluido' && job.status !== 'erro') {
+        setCurrentJobId(jobId);
+      }
     });
   }, []);
 
@@ -40,6 +52,30 @@ export default function ThumbCreator() {
       setTitle(roteiroOriginal.title || '');
     }
   }, [roteiroOriginal]);
+
+  // Monitora o job em tempo real
+  useEffect(() => {
+    if (monitoredJob) {
+      setProgress(monitoredJob.progresso || 0);
+      setLoading(monitoredJob.status === 'processando' || monitoredJob.status === 'iniciado');
+      
+      if (monitoredJob.status === 'concluido' && monitoredJob.resultado?.url) {
+        setThumbs(prev => {
+          const exists = prev.some(t => t.url === monitoredJob.resultado.url);
+          if (exists) return prev;
+          return [...prev, { url: monitoredJob.resultado.url, faceSwapAplicado: monitoredJob.resultado.faceSwap }];
+        });
+        setCurrentJobId(null);
+        toast.success('Thumbnail gerada!');
+      }
+      
+      if (monitoredJob.status === 'erro') {
+        setLoading(false);
+        setCurrentJobId(null);
+        toast.error(monitoredJob.erro || 'Erro ao gerar thumbnail');
+      }
+    }
+  }, [monitoredJob]);
 
   const handleImportarRoteiro = async () => {
     if (!roteiroOriginal?.text) {
@@ -111,13 +147,17 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
       return;
     }
 
+    const jobId = `thumb_${Date.now()}`;
+    registerJob(jobId, 'thumbnail', { title, subject, visual, comPersonagem });
+    setCurrentJobId(jobId);
+    setLoading(true);
+    setProgress(10);
+
     const faceImageUrl = comPersonagem ? (apresentadorSelecionado?.foto_url || fotoAvulsa || null) : null;
     const personDesc = comPersonagem && apresentadorSelecionado
       ? apresentadorSelecionado.descricao || apresentadorSelecionado.nome
       : '';
 
-    setLoading(true);
-    setProgress(10);
     const prompt = buildPrompt({ title, subject, visual, personDesc });
 
     // Simula aumento gradual de progresso
@@ -127,21 +167,23 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
 
     const response = await base44.functions.invoke('gerarThumbLuma', {
       prompt,
+      jobId, // Passa o jobId para o backend rastrear
       ...(faceImageUrl ? { image_refs: [faceImageUrl] } : {}),
       ...(refsParaFunnel.length > 0 ? { style_refs: refsParaFunnel.slice(0, 3) } : {}),
     });
 
     clearInterval(progressInterval);
-    setProgress(100);
 
     const url = response.data?.url;
     if (!url) {
       toast.error('Erro ao gerar thumbnail');
+      setLoading(false);
+      setCurrentJobId(null);
     } else {
       setThumbs([{ url, faceSwapAplicado: !!faceImageUrl }]);
-      toast.success('Thumbnail gerada!');
+      setProgress(100);
+      setLoading(false);
     }
-    setLoading(false);
     setProgress(0);
   };
 
@@ -151,14 +193,17 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
       return;
     }
 
+    const jobId = `thumb_variations_${Date.now()}`;
+    registerJob(jobId, 'thumbnail', { title, subject, visual, comPersonagem });
+    setCurrentJobId(jobId);
+    setLoading(true);
+    setProgress(10);
+
     const faceImageUrl = comPersonagem ? (apresentadorSelecionado?.foto_url || fotoAvulsa || null) : null;
     const personDesc = comPersonagem && apresentadorSelecionado
       ? apresentadorSelecionado.descricao || apresentadorSelecionado.nome
       : '';
 
-    setLoading(true);
-    setProgress(10);
-    
     const types = [
       { type: 'com', label: 'Com Texto' },
       { type: 'sem', label: 'Sem Texto' },
@@ -175,6 +220,7 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
       
       const response = await base44.functions.invoke('gerarThumbLuma', {
         prompt: typePrompt,
+        jobId,
         ...(faceImageUrl ? { image_refs: [faceImageUrl] } : {}),
         ...(refsParaFunnel.length > 0 ? { style_refs: refsParaFunnel.slice(0, 3) } : {}),
       });
