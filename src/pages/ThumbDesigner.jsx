@@ -5,6 +5,7 @@ import { Send, Sparkles, Plus, ImageIcon, Wand2, Loader2, BookImage, History } f
 import MessageBubble from '../components/thumbdesigner/MessageBubble';
 import ReferenciaGaleria from '../components/thumbdesigner/ReferenciaGaleria';
 import HistoricoGeracoes from '../components/thumbdesigner/HistoricoGeracoes';
+import GeradorComFaceSwap from '../components/thumbdesigner/GeradorComFaceSwap';
 import { useRoteiro } from '@/lib/RoteiroContext';
 
 export default function ThumbDesigner() {
@@ -15,7 +16,7 @@ export default function ThumbDesigner() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [refs, setRefs] = useState([]);
-  const [activeTab, setActiveTab] = useState('chat'); // 'chat' | 'referencias' | 'historico'
+  const [activeTab, setActiveTab] = useState('chat'); // 'chat' | 'referencias' | 'historico' | 'gerador'
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -70,7 +71,6 @@ export default function ThumbDesigner() {
     setInput('');
     setSending(true);
 
-    // Anexa URLs das referências visuais à mensagem se existirem
     const fileUrls = refs.map(r => r.url).filter(Boolean);
     const refNotas = refs.filter(r => r.notas).map(r => `• ${r.nome || 'Ref'}: ${r.notas}`).join('\n');
     const contentWithContext = refs.length > 0
@@ -96,8 +96,6 @@ export default function ThumbDesigner() {
       handleSend();
     }
   };
-
-  const isTyping = messages.length > 0 && messages[messages.length - 1]?.role === 'user' && sending === false && activeConv;
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden animate-fade-in">
@@ -130,7 +128,6 @@ export default function ThumbDesigner() {
             </button>
           ))}
         </div>
-        {/* Galeria de referências */}
         <div className="p-2 border-t border-border">
           <ReferenciaGaleria onRefsChange={setRefs} />
         </div>
@@ -138,7 +135,7 @@ export default function ThumbDesigner() {
 
       {/* Chat principal */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header + Tabs */}
+        {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-card/50 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-500/30 to-primary/30 border border-primary/20 flex items-center justify-center">
@@ -150,7 +147,7 @@ export default function ThumbDesigner() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {roteiroOriginal && (
+            {roteiroOriginal && activeTab === 'chat' && (
               <button
                 onClick={handleUseRoteiro}
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/15 border border-primary/30 rounded-lg text-xs text-primary font-medium transition-all"
@@ -176,6 +173,15 @@ export default function ThumbDesigner() {
           >
             <Sparkles className="w-3.5 h-3.5" />
             Chat IA
+          </button>
+          <button
+            onClick={() => setActiveTab('gerador')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              activeTab === 'gerador' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+            }`}
+          >
+            <Wand2 className="w-3.5 h-3.5" />
+            Gerador + Face Swap
           </button>
           <button
             onClick={() => setActiveTab('referencias')}
@@ -207,7 +213,7 @@ export default function ThumbDesigner() {
           </button>
         </div>
 
-        {/* Messages */}
+        {/* Painel: Chat */}
         <div className={`flex-1 overflow-y-auto p-5 space-y-4 ${activeTab !== 'chat' ? 'hidden' : ''}`}>
           {!activeConv && messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center px-6">
@@ -267,21 +273,28 @@ export default function ThumbDesigner() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Painel de Referências */}
+        {/* Painel: Gerador com Face Swap */}
+        {activeTab === 'gerador' && (
+          <div className="flex-1 overflow-y-auto p-4 md:p-6">
+            <GeradorComFaceSwap />
+          </div>
+        )}
+
+        {/* Painel: Referências */}
         {activeTab === 'referencias' && (
           <div className="flex-1 overflow-y-auto p-4">
             <ReferenciaGaleria onRefsChange={setRefs} alwaysExpanded />
           </div>
         )}
 
-        {/* Painel de Histórico */}
+        {/* Painel: Histórico */}
         {activeTab === 'historico' && (
           <div className="flex-1 overflow-y-auto">
             <HistoricoGeracoes conversations={conversations} />
           </div>
         )}
 
-        {/* Input — só aparece no chat */}
+        {/* Input — só no chat */}
         <div className={`p-4 border-t border-border bg-card/30 flex-shrink-0 ${activeTab !== 'chat' ? 'hidden' : ''}`}>
           <div className="flex gap-3 items-end">
             <textarea
