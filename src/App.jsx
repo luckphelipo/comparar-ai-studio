@@ -15,7 +15,7 @@ import Thumbnails from './pages/Thumbnails';
 import Biblioteca from './pages/Biblioteca';
 import Editor from './pages/Editor';
 import Configuracoes from './pages/Configuracoes';
-import ThumbDesigner from './pages/ThumbDesigner';
+import ThumbCreator from './pages/ThumbCreator';
 import BibliotecaPessoas from './pages/BibliotecaPessoas';
 import AnaliseTendencias from './pages/AnaliseTendencias';
 
@@ -54,7 +54,7 @@ const AuthenticatedApp = () => {
         <Route path="/biblioteca" element={<Biblioteca />} />
         <Route path="/editor" element={<Editor />} />
         <Route path="/configuracoes" element={<Configuracoes />} />
-        <Route path="/thumb-designer" element={<ThumbDesigner />} />
+        <Route path="/thumb-creator" element={<ThumbCreator />} />
         <Route path="/biblioteca-pessoas" element={<BibliotecaPessoas />} />
         <Route path="/tendencias" element={<AnaliseTendencias />} />
       </Route>

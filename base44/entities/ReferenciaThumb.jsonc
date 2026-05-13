@@ -13,6 +13,16 @@
     "notas": {
       "type": "string",
       "description": "O que eu gosto nesta thumbnail (estilo, cores, composi\u00e7\u00e3o, etc.)"
+    },
+    "funil": {
+      "type": "string",
+      "enum": [
+        "topo",
+        "fundo",
+        "ambos"
+      ],
+      "default": "ambos",
+      "description": "A qual funil esta refer\u00eancia pertence"
     }
   },
   "required": [
