@@ -43,7 +43,7 @@ export default function GerenciadorCreditos() {
   const handleSave = async (userId) => {
     const values = editValues[userId];
     try {
-      await base44.asServiceRole.entities.User.update(userId, {
+      await base44.entities.User.update(userId, {
         creditos: parseInt(values.creditos || 0),
         analises_restantes_mes: parseInt(values.analises || 20)
       });
@@ -58,7 +58,7 @@ export default function GerenciadorCreditos() {
       toast.success('Créditos e análises atualizados com sucesso');
     } catch (error) {
       console.error('Erro ao atualizar:', error);
-      toast.error('Erro ao atualizar: ' + (error.message || 'Tente novamente'));
+      toast.error('Erro ao atualizar');
     }
   };
 
