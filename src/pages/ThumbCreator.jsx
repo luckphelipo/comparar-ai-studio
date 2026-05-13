@@ -391,101 +391,7 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
           </div>
         </div>
 
-        {/* Expressão Facial — aparece depois que gera a thumb com personagem */}
-        {comPersonagem && thumbs.length > 0 && !thumbs[0]?.faceSwapAplicado && (
-          <div className="space-y-3 pt-3 border-t border-border">
-            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Expressão Facial</span>
-            <div className="flex flex-wrap gap-2">
-              {['neutra', 'feliz', 'raiva', 'medo', 'assustado', 'feliz apontando', 'assustado olhando'].map((exp) => (
-                <button
-                  key={exp}
-                  onClick={() => setExpressaoFacial(exp)}
-                  className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
-                    expressaoFacial === exp
-                      ? 'bg-primary/20 border-primary/50 text-primary'
-                      : 'bg-secondary/30 border-border text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {exp}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {/* Face Swap — aparece só se comPersonagem = true E thumbnail foi gerada */}
-        {comPersonagem && thumbs.length > 0 && !thumbs[0]?.faceSwapAplicado && (
-          <div className="space-y-3 pt-3 border-t border-border">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Apresentador para Face Swap</span>
-              {faceRefName && (
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">
-                  ✓ {faceRefName}
-                </span>
-              )}
-            </div>
-
-            {apresentadores.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {apresentadores.map((a) => {
-                  const sel = apresentadorSelecionado?.id === a.id;
-                  return (
-                    <button
-                      key={a.id}
-                      onClick={() => {
-                        setApresentadorSelecionado(sel ? null : a);
-                        if (!sel) setFotoAvulsa(null);
-                      }}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
-                        sel
-                          ? 'bg-primary/20 border-primary/50 text-primary'
-                          : 'bg-secondary/30 border-border text-muted-foreground hover:text-foreground hover:border-primary/30'
-                      }`}
-                    >
-                      <img src={a.foto_url} alt={a.nome} className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
-                      {a.nome}
-                      {sel && <Check className="w-3 h-3" />}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            <div className="flex items-center gap-3">
-              <div className="flex-1 border-t border-border" />
-              <span className="text-[11px] text-muted-foreground">ou envie uma foto</span>
-              <div className="flex-1 border-t border-border" />
-            </div>
-
-            <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${
-              fotoAvulsa
-                ? 'bg-green-500/10 border-green-500/30 text-green-400'
-                : 'bg-secondary/20 border-dashed border-border hover:border-primary/40 text-muted-foreground hover:text-foreground'
-            }`}>
-              {uploadingFoto ? (
-                <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
-              ) : fotoAvulsa ? (
-                <img src={fotoAvulsa} alt="ref" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
-              ) : (
-                <Upload className="w-4 h-4 flex-shrink-0" />
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium">
-                  {uploadingFoto ? 'Enviando...' : fotoAvulsa ? 'Foto de referência enviada' : 'Enviar foto de referência'}
-                </p>
-              </div>
-              {fotoAvulsa && (
-                <button
-                  onClick={(e) => { e.preventDefault(); setFotoAvulsa(null); }}
-                  className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-500/20 transition-colors flex-shrink-0"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-              <input type="file" accept="image/*" className="hidden" onChange={handleUploadFotoAvulsa} />
-            </label>
-          </div>
-        )}
 
         {/* Botões */}
         <div className="flex gap-2 pt-3 border-t border-border">
@@ -560,32 +466,117 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
                     key={i}
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="group relative bg-card border border-border rounded-xl overflow-hidden hover:border-primary/40 transition-all"
+                    className="space-y-3"
                   >
-                    <div className="w-full aspect-video relative overflow-hidden bg-secondary/30">
-                      <img src={thumb.url} alt={`Thumb ${i + 1}`} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <a
-                          href={thumb.url}
-                          download
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors text-white text-sm font-medium"
-                        >
-                          <Wand2 className="w-4 h-4" />
-                          Baixar
-                        </a>
+                    {/* Card da imagem */}
+                    <div className="group relative bg-card border border-border rounded-xl overflow-hidden hover:border-primary/40 transition-all">
+                      <div className="w-full aspect-video relative overflow-hidden bg-secondary/30">
+                        <img src={thumb.url} alt={`Thumb ${i + 1}`} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <a
+                            href={thumb.url}
+                            download
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors text-white text-sm font-medium"
+                          >
+                            <Wand2 className="w-4 h-4" />
+                            Baixar
+                          </a>
+                        </div>
+                      </div>
+                      <div className="p-3 flex items-center gap-2">
+                        <span className="text-[10px] font-mono text-muted-foreground">#{i + 1}</span>
+                        {thumb.label && <span className="text-[10px] font-mono text-primary">{thumb.label}</span>}
+                        {thumb.faceSwapAplicado && (
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-green-500/10 text-green-400 border border-green-500/20">
+                            face swap ✓
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <div className="p-3 flex items-center gap-2">
-                      <span className="text-[10px] font-mono text-muted-foreground">#{i + 1}</span>
-                      {thumb.label && <span className="text-[10px] font-mono text-primary">{thumb.label}</span>}
-                      {thumb.faceSwapAplicado && (
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-green-500/10 text-green-400 border border-green-500/20">
-                          face swap ✓
-                        </span>
-                      )}
-                    </div>
+
+                    {/* Controles de expressão facial e seleção de apresentador — só quando com personagem e thumb gerada */}
+                    {i === 0 && comPersonagem && !thumb.faceSwapAplicado && (
+                      <div className="space-y-2 bg-card border border-border rounded-xl p-3">
+                        {/* Expressão Facial */}
+                        <div className="space-y-2">
+                          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide block">Expressão</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {['neutra', 'feliz', 'raiva', 'medo', 'assustado', 'feliz apontando', 'assustado olhando'].map((exp) => (
+                              <button
+                                key={exp}
+                                onClick={() => setExpressaoFacial(exp)}
+                                className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-medium transition-all ${
+                                  expressaoFacial === exp
+                                    ? 'bg-primary/20 border-primary/50 text-primary'
+                                    : 'bg-secondary/30 border-border text-muted-foreground hover:text-foreground'
+                                }`}
+                              >
+                                {exp}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Apresentador */}
+                        <div className="space-y-2 pt-2 border-t border-border">
+                          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide block">Apresentador</span>
+                          {apresentadores.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {apresentadores.map((a) => {
+                                const sel = apresentadorSelecionado?.id === a.id;
+                                return (
+                                  <button
+                                    key={a.id}
+                                    onClick={() => {
+                                      setApresentadorSelecionado(sel ? null : a);
+                                      if (!sel) setFotoAvulsa(null);
+                                    }}
+                                    className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border text-[11px] font-medium transition-all ${
+                                      sel
+                                        ? 'bg-primary/20 border-primary/50 text-primary'
+                                        : 'bg-secondary/30 border-border text-muted-foreground hover:text-foreground hover:border-primary/30'
+                                    }`}
+                                  >
+                                    <img src={a.foto_url} alt={a.nome} className="w-4 h-4 rounded-full object-cover flex-shrink-0" />
+                                    {a.nome}
+                                    {sel && <Check className="w-3 h-3" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Upload foto avulsa */}
+                          <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all text-[11px] ${
+                            fotoAvulsa
+                              ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                              : 'bg-secondary/20 border-dashed border-border hover:border-primary/40 text-muted-foreground hover:text-foreground'
+                          }`}>
+                            {uploadingFoto ? (
+                              <Loader2 className="w-3 h-3 animate-spin flex-shrink-0" />
+                            ) : fotoAvulsa ? (
+                              <img src={fotoAvulsa} alt="ref" className="w-4 h-4 rounded-full object-cover flex-shrink-0" />
+                            ) : (
+                              <Upload className="w-3 h-3 flex-shrink-0" />
+                            )}
+                            <span className="flex-1 min-w-0 font-medium">
+                              {uploadingFoto ? 'Enviando...' : fotoAvulsa ? '✓ Foto enviada' : 'Enviar foto'}
+                            </span>
+                            {fotoAvulsa && (
+                              <button
+                                onClick={(e) => { e.preventDefault(); setFotoAvulsa(null); }}
+                                className="w-4 h-4 flex items-center justify-center hover:text-destructive transition-colors flex-shrink-0"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                            <input type="file" accept="image/*" className="hidden" onChange={handleUploadFotoAvulsa} />
+                          </label>
+                        </div>
+                      </div>
+                    )}
                   </motion.div>
                 ))}
               </div>
