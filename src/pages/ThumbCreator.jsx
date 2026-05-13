@@ -413,8 +413,8 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
           </div>
         )}
 
-        {/* Face Swap — aparece só se comPersonagem = true */}
-        {comPersonagem && (
+        {/* Face Swap — aparece só se comPersonagem = true E thumbnail foi gerada */}
+        {comPersonagem && thumbs.length > 0 && !thumbs[0]?.faceSwapAplicado && (
           <div className="space-y-3 pt-3 border-t border-border">
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Apresentador para Face Swap</span>
