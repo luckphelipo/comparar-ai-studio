@@ -3,7 +3,8 @@ import { base44 } from '@/api/base44Client';
 import { useFunnel } from '@/lib/FunnelContext';
 import { useRoteiro } from '@/lib/RoteiroContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Rocket, Target } from 'lucide-react';
+import { Rocket, Target, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import RoteiroInput from '../components/roteiro/RoteiroInput';
 import RoteiroResultado from '../components/roteiro/RoteiroResultado';
 import RoteiroOtimizado from '../components/roteiro/RoteiroOtimizado';
@@ -20,11 +21,44 @@ export default function Roteiro() {
   const [loading, setLoading] = useState(false);
   const [otimizando, setOtimizando] = useState(false);
   const [gerandoSugestoes, setGerandoSugestoes] = useState(false);
+  const [analisesMes, setAnalisesMes] = useState(null);
   const FunnelIcon = funnel === 'top' ? Rocket : Target;
+
+  const carregarAnalisesMes = async () => {
+    try {
+      const user = await base44.auth.me();
+      setAnalisesMes(user?.analises_restantes_mes || 0);
+    } catch (error) {
+      setAnalisesMes(0);
+    }
+  };
+
+  useState(() => {
+    carregarAnalisesMes();
+  }, []);
 
   const handleAnalyze = async ({ title, text }) => {
     setLoading(true);
     setResultado(null);
+
+    // Verificar análises disponíveis
+    const user = await base44.auth.me();
+    if (!user) {
+      toast.error('Usuário não autenticado');
+      setLoading(false);
+      return;
+    }
+
+    if ((user.analises_restantes_mes || 0) <= 0) {
+      toast.error('Você atingiu o limite de 20 análises por mês. Tente novamente no próximo mês.');
+      setLoading(false);
+      return;
+    }
+
+    // Descontar uma análise
+    await base44.auth.updateMe({
+      analises_restantes_mes: Math.max(0, (user.analises_restantes_mes || 20) - 1)
+    });
 
     const funnelContext = funnel === 'top'
       ? 'Topo de Funil (ToFu) — viralização, alcance, emoção, curiosidade'
@@ -218,6 +252,30 @@ Responde APENAS com o roteiro reescrito, sem introduções, sem explicações, s
           </p>
         </motion.div>
       </AnimatePresence>
+
+      {analisesMes !== null && (
+        <div className={`border rounded-xl px-5 py-3 flex items-center gap-3 ${
+          analisesMes <= 0 ? 'bg-destructive/10 border-destructive/30' :
+          analisesMes <= 5 ? 'bg-highlight/10 border-highlight/30' :
+          'bg-primary/10 border-primary/30'
+        }`}>
+          <AlertCircle className={`w-4 h-4 flex-shrink-0 ${
+            analisesMes <= 0 ? 'text-destructive' :
+            analisesMes <= 5 ? 'text-highlight' :
+            'text-primary'
+          }`} />
+          <p className={`text-xs font-semibold ${
+            analisesMes <= 0 ? 'text-destructive' :
+            analisesMes <= 5 ? 'text-highlight' :
+            'text-primary'
+          }`}>
+            {analisesMes <= 0 
+              ? '⚠️ Sem análises disponíveis este mês'
+              : `${analisesMes} análise${analisesMes !== 1 ? 's' : ''} disponível${analisesMes !== 1 ? 's' : ''} este mês`
+            }
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         <RoteiroInput onAnalyze={handleAnalyze} loading={loading} />
