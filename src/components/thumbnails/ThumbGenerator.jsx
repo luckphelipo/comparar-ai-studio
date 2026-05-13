@@ -115,10 +115,11 @@ export default function ThumbGenerator({ funnel = 'top', config = {} }) {
       setLoadingIdx(i + 1);
       const v = VARIACOES[i];
       const prompt = v.buildPrompt({ ...briefing, person: personDesc, funnelDesc });
-      const { url } = await base44.integrations.Core.GenerateImage({
+      const response = await base44.functions.invoke('gerarThumbLuma', {
         prompt,
-        ...(refImages.length > 0 ? { existing_image_urls: refImages } : {}),
+        ...(refImages.length > 0 ? { image_refs: refImages } : {}),
       });
+      const { url } = response.data;
       results.push({
         url,
         label: v.label,
