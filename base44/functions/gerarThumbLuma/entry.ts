@@ -13,15 +13,31 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verificar se tem créditos (só descontar se NÃO for face swap direto)
+    // Verificar e descontar créditos
     const isOnlyFaceSwap = prompt === 'Apply face swap';
+    const hasFaceSwap = image_refs && image_refs.length > 0;
+    
+    const userCreditos = user.creditos || 0;
+    let creditosADescontar = 0;
+
+    // Descontar 1 crédito para geração de thumbnail
     if (!isOnlyFaceSwap) {
-      const userCreditos = user.creditos || 0;
-      if (userCreditos <= 0) {
-        return Response.json({ error: 'Saldo insuficiente. Você não tem créditos disponíveis.' }, { status: 402 });
-      }
-      // Descontar 1 crédito
-      await base44.auth.updateMe({ creditos: userCreditos - 1 });
+      creditosADescontar = 1;
+    }
+
+    // Descontar 1 crédito adicional se tiver personagem (face swap)
+    if (hasFaceSwap) {
+      creditosADescontar += 1;
+    }
+
+    // Validar se tem créditos suficientes
+    if (creditosADescontar > 0 && userCreditos < creditosADescontar) {
+      return Response.json({ error: `Saldo insuficiente. Você precisa de ${creditosADescontar} créditos.` }, { status: 402 });
+    }
+
+    // Descontar créditos
+    if (creditosADescontar > 0) {
+      await base44.auth.updateMe({ creditos: userCreditos - creditosADescontar });
     }
 
     const API_KEY = Deno.env.get("wavespeed");
