@@ -9,6 +9,7 @@ import RoteiroInput from '../components/roteiro/RoteiroInput';
 import RoteiroResultado from '../components/roteiro/RoteiroResultado';
 import RoteiroOtimizado from '../components/roteiro/RoteiroOtimizado';
 import DistribuicaoFunnelChart from '../components/roteiro/DistribuicaoFunnelChart';
+import HistoricoRoteiros from '../components/roteiro/HistoricoRoteiros';
 
 export default function Roteiro() {
   const { funnel, config } = useFunnel();
@@ -141,13 +142,15 @@ Responde APENAS com um JSON válido, sem markdown, sem explicações fora do JSO
     setRoteiroOtimizado(null);
     setSugestoesTitulo(null);
 
-    // Salvar análise no histórico
+    // Salvar análise completa no histórico
     try {
       await base44.entities.AnalisesRoteiro.create({
         titulo: title || 'Roteiro sem título',
         funil: funnel,
+        texto_roteiro: text,
         score_geral: result.score_geral,
-        resumo: result.resumo
+        resumo: result.resumo,
+        resultado_completo: result
       });
     } catch (error) {
       console.error('Erro ao salvar análise:', error);
@@ -202,6 +205,13 @@ Responde APENAS com um JSON válido, sem markdown, seguindo EXATAMENTE este sche
       }
     }
     setGerandoSugestoes(false);
+  };
+
+  const handleSelectAnalise = (analise) => {
+    setResultado(analise.resultado_completo);
+    setRoteiroOriginal({ title: analise.titulo, text: analise.texto_roteiro });
+    setRoteiroOtimizado(null);
+    setSugestoesTitulo(null);
   };
 
   const handleOtimizar = async () => {
@@ -298,8 +308,9 @@ Responde APENAS com o roteiro reescrito, sem introduções, sem explicações, s
           <RoteiroInput onAnalyze={handleAnalyze} loading={loading} />
         </div>
 
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-6">
           <DistribuicaoFunnelChart />
+          <HistoricoRoteiros onSelectAnalise={handleSelectAnalise} />
         </div>
       </div>
 
