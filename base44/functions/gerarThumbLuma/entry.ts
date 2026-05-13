@@ -3,7 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { prompt, image_refs, style_refs, jobId } = await req.json();
+    const { prompt, image_refs, style_refs, jobId, expressaoFacial } = await req.json();
 
     if (!prompt) return Response.json({ error: 'prompt is required' }, { status: 400 });
 
@@ -79,12 +79,24 @@ Deno.serve(async (req) => {
 
     // 2. Se tiver foto do apresentador, usar GPT Image 2 Edit para aplicar o rosto
     if (image_refs && image_refs.length > 0 && thumbUrl) {
+      const expressaoMap = {
+        'neutra': 'neutral, calm expression',
+        'feliz': 'happy, smiling expression',
+        'raiva': 'angry expression',
+        'medo': 'fearful expression',
+        'assustado': 'scared, surprised expression',
+        'feliz apontando': 'happy and pointing towards the text',
+        'assustado olhando': 'scared and looking towards the text'
+      };
+      
+      const expressaoDescricao = expressaoMap[expressaoFacial] || 'neutral expression';
+
       const editRes = await fetch("https://api.wavespeed.ai/api/v3/openai/gpt-image-2/edit", {
         method: "POST",
         headers,
         body: JSON.stringify({
           images: [thumbUrl, image_refs[0]],
-          prompt: "Keep the entire thumbnail exactly as it is — composition, background, text, colors, and all visual elements must remain identical. The only change is: replace the face of the person in the thumbnail with the face from the second reference image. Match the lighting, skin tone, and expression style of the original. Do not alter anything else.",
+          prompt: `Keep the entire thumbnail exactly as it is — composition, background, text, colors, and all visual elements must remain identical. The only change is: replace the face of the person in the thumbnail with the face from the second reference image. The person should have a ${expressaoDescricao}. Match the lighting and skin tone of the original. Do not alter anything else.`,
           aspect_ratio: "16:9",
           resolution: "1k",
           quality: "medium",

@@ -31,6 +31,7 @@ export default function ThumbCreator() {
   const [resumindoRoteiro, setResumindoRoteiro] = useState(false);
   const [ultimaThumb, setUltimaThumb] = useState(null);
   const [aplicandoPersonagem, setAplicandoPersonagem] = useState(false);
+  const [expressaoFacial, setExpressaoFacial] = useState('neutra');
 
   useEffect(() => {
     base44.entities.Apresentador.list('-created_date').then(setApresentadores);
@@ -106,19 +107,23 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
     return relevantTags.some(tag => tags.includes(tag));
   }).map(r => r.url).filter(Boolean);
 
-  const buildPrompt = ({ title, subject, visual, personDesc }) => {
+  const buildPrompt = ({ title, subject, visual, personDesc, comEspaco = false }) => {
     const funnelDesc = funnel === 'topo' 
       ? 'viral, emoção, curiosidade, alto CTR'
       : 'autoridade, confiança, prova social';
     
     if (textType === 'com') {
+      const espacoText = comEspaco ? 'Inclua uma pessoa com expressão neutra posicionada para face swap.' : '';
       return `YouTube thumbnail 1280x720. ${funnelDesc}. ` +
         `Texto ENORME amarelo negrito, 40% esquerda, contorno preto. ` +
         `${visual ? `${visual} em destaque. ` : ''} ` +
+        `${espacoText} ` +
         `Fundo fotorrealista de "${subject}", alta saturação, contraste máximo, impacto visual.`;
     } else {
+      const espacoText = comEspaco ? 'Inclua uma pessoa com expressão neutra posicionada para face swap.' : '';
       return `YouTube thumbnail 1280x720, SEM TEXTO. ${funnelDesc}. ` +
         `${visual ? `${visual}` : `Elemento de "${subject}"`} em destaque. ` +
+        `${espacoText} ` +
         `Fundo fotorrealista, cores saturadas, contraste máximo, impacto visual.`;
     }
   };
@@ -134,9 +139,7 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
     setLoading(true);
     setProgress(10);
 
-    // Sempre gera SEM personagem na primeira etapa
-    const personDesc = '';
-    const prompt = buildPrompt({ title, subject, visual, personDesc });
+    const prompt = buildPrompt({ title, subject, visual, comEspaco: comPersonagem });
 
     const progressInterval = setInterval(() => {
       setProgress(prev => Math.min(prev + Math.random() * 20, 90));
@@ -186,6 +189,7 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
       prompt: 'Apply face swap',
       image_refs: [faceImageUrl],
       style_refs: [ultimaThumb],
+      expressaoFacial,
     });
 
     clearInterval(progressInterval);
@@ -387,6 +391,28 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
           </div>
         </div>
 
+        {/* Expressão Facial — aparece depois que gera a thumb com personagem */}
+        {comPersonagem && thumbs.length > 0 && !thumbs[0]?.faceSwapAplicado && (
+          <div className="space-y-3 pt-3 border-t border-border">
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Expressão Facial</span>
+            <div className="flex flex-wrap gap-2">
+              {['neutra', 'feliz', 'raiva', 'medo', 'assustado', 'feliz apontando', 'assustado olhando'].map((exp) => (
+                <button
+                  key={exp}
+                  onClick={() => setExpressaoFacial(exp)}
+                  className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
+                    expressaoFacial === exp
+                      ? 'bg-primary/20 border-primary/50 text-primary'
+                      : 'bg-secondary/30 border-border text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {exp}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Face Swap — aparece só se comPersonagem = true */}
         {comPersonagem && (
           <div className="space-y-3 pt-3 border-t border-border">
@@ -565,7 +591,7 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
               </div>
 
               {!loading && !aplicandoPersonagem && (
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-col sm:flex-row">
                   <button
                     onClick={handleGerarVariacoes}
                     className="flex-1 py-3 bg-secondary/60 hover:bg-secondary border border-border rounded-xl text-sm font-semibold text-foreground transition-all"
@@ -576,9 +602,9 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
                   {comPersonagem && (apresentadorSelecionado || fotoAvulsa) && !thumbs[0]?.faceSwapAplicado && (
                     <button
                       onClick={handleAplicarPersonagem}
-                      className="flex-1 py-3 bg-primary hover:bg-primary/90 border border-primary rounded-xl text-sm font-semibold text-primary-foreground transition-all"
+                      className="flex-1 py-3 bg-highlight hover:bg-highlight/90 border border-highlight rounded-xl text-sm font-semibold text-highlight-foreground transition-all glow-blue"
                     >
-                      👤 Aplicar Personagem
+                      👤 Inserir Personagem
                     </button>
                   )}
                 </div>
