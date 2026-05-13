@@ -1,10 +1,18 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+
 Deno.serve(async (req) => {
   try {
-    const { prompt, image_refs, style_refs } = await req.json();
+    const base44 = createClientFromRequest(req);
+    const { prompt, image_refs, style_refs, jobId } = await req.json();
 
     if (!prompt) return Response.json({ error: 'prompt is required' }, { status: 400 });
 
     const API_KEY = Deno.env.get("wavespeed");
+    
+    // Atualiza status para "processando"
+    if (jobId) {
+      await base44.asServiceRole.entities.Job.update(jobId, { status: 'processando', progresso: 15 });
+    }
 
     const headers = {
       "Authorization": `Bearer ${API_KEY}`,
@@ -47,6 +55,7 @@ Deno.serve(async (req) => {
         return Response.json({ error: editStyleData?.message || "Erro ao criar geração com referências" }, { status: 500 });
       }
       thumbUrl = await pollResult(editStyleData.data.id);
+      if (jobId) await base44.asServiceRole.entities.Job.update(jobId, { progresso: 50 });
     } else {
       // Sem referências: geração direta text-to-image
       const genRes = await fetch("https://api.wavespeed.ai/api/v3/openai/gpt-image-2/text-to-image", {
@@ -63,9 +72,11 @@ Deno.serve(async (req) => {
       });
       const genData = await genRes.json();
       if (!genRes.ok || !genData.data?.id) {
+        if (jobId) await base44.asServiceRole.entities.Job.update(jobId, { status: 'erro', erro: genData?.message || "Erro ao criar geração" });
         return Response.json({ error: genData?.message || "Erro ao criar geração" }, { status: 500 });
       }
       thumbUrl = await pollResult(genData.data.id);
+      if (jobId) await base44.asServiceRole.entities.Job.update(jobId, { progresso: 50 });
     }
 
     // 2. Se tiver foto do apresentador, usar GPT Image 2 Edit para aplicar o rosto
@@ -87,12 +98,23 @@ Deno.serve(async (req) => {
       const editData = await editRes.json();
       if (editRes.ok && editData.data?.id) {
         thumbUrl = await pollResult(editData.data.id);
+        if (jobId) await base44.asServiceRole.entities.Job.update(jobId, { progresso: 85 });
       }
+    }
+
+    // Atualiza como concluído
+    if (jobId) {
+      await base44.asServiceRole.entities.Job.update(jobId, { 
+        status: 'concluido', 
+        progresso: 100,
+        resultado: { url: thumbUrl, faceSwap: image_refs && image_refs.length > 0 }
+      });
     }
 
     return Response.json({ url: thumbUrl });
 
   } catch (error) {
+    console.error("Erro na geração:", error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

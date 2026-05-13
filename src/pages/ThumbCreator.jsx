@@ -148,6 +148,16 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
     }
 
     const jobId = `thumb_${Date.now()}`;
+    
+    // Cria o job no banco de dados
+    await base44.entities.Job.create({
+      job_id: jobId,
+      tipo: 'thumbnail',
+      status: 'iniciado',
+      progresso: 0,
+      parametros: { title, subject, visual, comPersonagem }
+    });
+    
     registerJob(jobId, 'thumbnail', { title, subject, visual, comPersonagem });
     setCurrentJobId(jobId);
     setLoading(true);
@@ -194,6 +204,16 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
     }
 
     const jobId = `thumb_variations_${Date.now()}`;
+    
+    // Cria o job no banco de dados
+    await base44.entities.Job.create({
+      job_id: jobId,
+      tipo: 'thumbnail',
+      status: 'iniciado',
+      progresso: 0,
+      parametros: { title, subject, visual, comPersonagem }
+    });
+    
     registerJob(jobId, 'thumbnail', { title, subject, visual, comPersonagem });
     setCurrentJobId(jobId);
     setLoading(true);
