@@ -1,5 +1,3 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
-
 const LUMA_API_URL = 'https://api.lumalabs.ai/dream-machine/v1/generations/image';
 const LUMA_API_KEY = Deno.env.get('LUMA_API_KEY');
 
@@ -18,10 +16,6 @@ async function pollGeneration(id, maxAttempts = 30) {
 
 Deno.serve(async (req) => {
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
     const { prompt, image_refs, style_refs } = await req.json();
 
     if (!prompt) return Response.json({ error: 'prompt is required' }, { status: 400 });
@@ -53,7 +47,8 @@ Deno.serve(async (req) => {
     });
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || data.message || 'Luma API error');
+    console.log('Luma response status:', res.status, JSON.stringify(data));
+    if (!res.ok) throw new Error(JSON.stringify(data) || 'Luma API error');
 
     const imageUrl = await pollGeneration(data.id);
     return Response.json({ url: imageUrl });
