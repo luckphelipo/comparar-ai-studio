@@ -25,6 +25,7 @@ export default function ThumbCreator() {
   
   const [thumbs, setThumbs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [resumindoRoteiro, setResumindoRoteiro] = useState(false);
 
   useEffect(() => {
     base44.entities.Apresentador.list('-created_date').then(setApresentadores);
@@ -38,6 +39,35 @@ export default function ThumbCreator() {
       setTitle(roteiroOriginal.title || '');
     }
   }, [roteiroOriginal]);
+
+  const handleImportarRoteiro = async () => {
+    if (!roteiroOriginal?.text) {
+      toast.error('Nenhum roteiro analisado. Primeiro analise um roteiro na aba Roteiro.');
+      return;
+    }
+
+    setResumindoRoteiro(true);
+    try {
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: `Resuma o seguinte roteiro de vídeo em uma frase CURTA (máximo 15 palavras) focada APENAS nos elementos visuais, cenários e contexto visual relevante para criar uma thumbnail de YouTube. Não mencione a ação do apresentador, apenas o contexto visual.
+
+ROTEIRO:
+${roteiroOriginal.text}
+
+Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
+      });
+
+      const resumo = response.data?.trim() || '';
+      if (resumo) {
+        setSubject(resumo);
+        toast.success('Contexto visual importado do roteiro!');
+      }
+    } catch (error) {
+      toast.error('Erro ao resumir o roteiro');
+    } finally {
+      setResumindoRoteiro(false);
+    }
+  };
 
   const handleUploadFotoAvulsa = async (e) => {
     const file = e.target.files[0];
@@ -245,7 +275,18 @@ export default function ThumbCreator() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Assunto / Contexto <span className="text-destructive">*</span></label>
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Assunto / Contexto <span className="text-destructive">*</span></label>
+                {roteiroOriginal && (
+                  <button
+                    onClick={handleImportarRoteiro}
+                    disabled={resumindoRoteiro}
+                    className="text-[10px] px-2 py-1 rounded bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 font-medium transition-all disabled:opacity-50"
+                  >
+                    {resumindoRoteiro ? '⏳ Resumindo...' : '📋 Importar'}
+                  </button>
+                )}
+              </div>
               <input
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
