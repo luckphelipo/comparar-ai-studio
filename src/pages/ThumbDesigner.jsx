@@ -1,320 +1,435 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Sparkles, Plus, ImageIcon, Wand2, Loader2, BookImage, History } from 'lucide-react';
-import MessageBubble from '../components/thumbdesigner/MessageBubble';
+import { Sparkles, Plus, ImageIcon, Wand2, Loader2, Check, X, Upload } from 'lucide-react';
 import ReferenciaGaleria from '../components/thumbdesigner/ReferenciaGaleria';
-import HistoricoGeracoes from '../components/thumbdesigner/HistoricoGeracoes';
-import GeradorComFaceSwap from '../components/thumbdesigner/GeradorComFaceSwap';
 import { useRoteiro } from '@/lib/RoteiroContext';
+import { toast } from 'sonner';
 
 export default function ThumbDesigner() {
   const { roteiroOriginal } = useRoteiro();
-  const [conversations, setConversations] = useState([]);
-  const [activeConv, setActiveConv] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
-  const [sending, setSending] = useState(false);
   const [refs, setRefs] = useState([]);
-  const [activeTab, setActiveTab] = useState('chat'); // 'chat' | 'referencias' | 'historico' | 'gerador'
-  const messagesEndRef = useRef(null);
+  
+  // Gerador
+  const [funnel, setFunnel] = useState('top'); // 'top' | 'bottom'
+  const [textType, setTextType] = useState('com'); // 'com' | 'sem'
+  const [apresentadores, setApresentadores] = useState([]);
+  const [apresentadorSelecionado, setApresentadorSelecionado] = useState(null);
+  const [fotoAvulsa, setFotoAvulsa] = useState(null);
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+  
+  const [title, setTitle] = useState('');
+  const [subject, setSubject] = useState('');
+  const [visual, setVisual] = useState('');
+  
+  const [thumbs, setThumbs] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    loadConversations();
+    base44.entities.Apresentador.list('-created_date').then(setApresentadores);
+    base44.entities.ReferenciaThumb.list('-created_date').then((refs) => {
+      setRefs(refs.map(r => r.url).filter(Boolean));
+    });
   }, []);
 
   useEffect(() => {
-    if (!activeConv) return;
-    const unsub = base44.agents.subscribeToConversation(activeConv.id, (data) => {
-      setMessages(data.messages || []);
+    if (roteiroOriginal) {
+      setTitle(roteiroOriginal.title || '');
+    }
+  }, [roteiroOriginal]);
+
+  const handleUploadFotoAvulsa = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingFoto(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setFotoAvulsa(file_url);
+    setApresentadorSelecionado(null);
+    setUploadingFoto(false);
+    e.target.value = '';
+  };
+
+  const buildPrompt = ({ title, subject, visual, personDesc }) => {
+    const funnelDesc = funnel === 'top' 
+      ? 'thumbnail viral de topo de funil, emoção, curiosidade e alto CTR'
+      : 'thumbnail de fundo de funil, autoridade, confiança e prova social';
+    
+    if (textType === 'com') {
+      return `YouTube thumbnail 1280x720, estilo YouTube Brasil viral. ${funnelDesc}. ` +
+        `Texto ENORME em negrito ocupando 40% da tela à esquerda, cor amarelo vibrante com contorno preto. ` +
+        `${personDesc ? `Pessoa ${personDesc} posicionada à direita, expressão intensa olhando para câmera.` : 'Pessoa em destaque à direita, expressão intensa.'} ` +
+        `${visual ? `Elemento visual em destaque: ${visual}.` : ''} ` +
+        `Fundo fotorrealista relacionado a "${subject}", iluminação dramática com leve desfoque. ` +
+        `Alta saturação, alto contraste, impacto visual imediato. Proporção 16:9, qualidade fotorrealista.`;
+    } else {
+      return `YouTube thumbnail 1280x720, estilo MrBeast Brasil viral, SEM TEXTO, SEM LETRAS. ` +
+        `${personDesc ? `Pessoa ${personDesc}` : 'Homem jovem'} com expressão de CHOQUE EXTREMO — boca aberta, olhos arregalados, apontando com o dedo indicador. ` +
+        `${visual ? `Elemento principal: ${visual}, colocado de forma proeminente.` : `Elemento relacionado a "${subject}" em destaque.`} ` +
+        `Fundo fotorrealista icônico relacionado a "${subject}", iluminação dourada dramática. ` +
+        `Cores altamente saturadas, alto contraste, fotorrealismo profissional. Proporção 16:9.`;
+    }
+  };
+
+  const handleGerarUma = async () => {
+    if (!title.trim() || !subject.trim()) {
+      toast.error('Preencha o título e o assunto do vídeo.');
+      return;
+    }
+
+    const faceImageUrl = apresentadorSelecionado?.foto_url || fotoAvulsa || null;
+    const personDesc = apresentadorSelecionado
+      ? apresentadorSelecionado.descricao || apresentadorSelecionado.nome
+      : '';
+
+    setLoading(true);
+    const prompt = buildPrompt({ title, subject, visual, personDesc });
+    
+    const styleRefsForFunnel = funnel === 'top' ? refs.slice(0, 3) : refs.slice(0, 3);
+
+    const response = await base44.functions.invoke('gerarThumbLuma', {
+      prompt,
+      ...(faceImageUrl ? { image_refs: [faceImageUrl] } : {}),
+      ...(styleRefsForFunnel.length > 0 ? { style_refs: styleRefsForFunnel } : {}),
     });
-    return unsub;
-  }, [activeConv?.id]);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const loadConversations = async () => {
-    const list = await base44.agents.listConversations({ agent_name: 'thumb_designer' });
-    setConversations(list || []);
+    const url = response.data?.url;
+    if (!url) {
+      toast.error('Erro ao gerar thumbnail');
+    } else {
+      setThumbs([{ url, faceSwapAplicado: !!faceImageUrl }]);
+      toast.success('Thumbnail gerada!');
+    }
+    setLoading(false);
   };
 
-  const handleNewConversation = async () => {
-    const conv = await base44.agents.createConversation({
-      agent_name: 'thumb_designer',
-      metadata: { name: `Sessão ${new Date().toLocaleDateString('pt-BR')}` },
-    });
-    setActiveConv(conv);
-    setMessages([]);
-    setConversations(prev => [conv, ...prev]);
-  };
+  const handleGerarVariacoes = async () => {
+    if (!title.trim() || !subject.trim()) {
+      toast.error('Preencha o título e o assunto do vídeo.');
+      return;
+    }
 
-  const handleSelectConversation = async (conv) => {
-    const full = await base44.agents.getConversation(conv.id);
-    setActiveConv(full);
-    setMessages(full.messages || []);
-  };
+    const faceImageUrl = apresentadorSelecionado?.foto_url || fotoAvulsa || null;
+    const personDesc = apresentadorSelecionado
+      ? apresentadorSelecionado.descricao || apresentadorSelecionado.nome
+      : '';
 
-  const handleSend = async () => {
-    if (!input.trim() || sending) return;
-    let conv = activeConv;
-    if (!conv) {
-      conv = await base44.agents.createConversation({
-        agent_name: 'thumb_designer',
-        metadata: { name: input.slice(0, 40) },
+    setLoading(true);
+    const styleRefsForFunnel = funnel === 'top' ? refs.slice(0, 3) : refs.slice(0, 3);
+    
+    const types = [
+      { type: 'com', label: 'Com Texto' },
+      { type: 'sem', label: 'Sem Texto' },
+    ];
+
+    const newThumbs = [];
+    for (const { type, label } of types) {
+      const oldTextType = textType;
+      const typePrompt = buildPrompt({ title, subject, visual, personDesc }).replace(/COM TEXTO|SEM TEXTO/gi, label);
+      
+      const response = await base44.functions.invoke('gerarThumbLuma', {
+        prompt: typePrompt,
+        ...(faceImageUrl ? { image_refs: [faceImageUrl] } : {}),
+        ...(styleRefsForFunnel.length > 0 ? { style_refs: styleRefsForFunnel } : {}),
       });
-      setActiveConv(conv);
-      setConversations(prev => [conv, ...prev]);
+
+      const url = response.data?.url;
+      if (url) {
+        newThumbs.push({ url, faceSwapAplicado: !!faceImageUrl, label });
+      }
     }
-    const text = input;
-    setInput('');
-    setSending(true);
 
-    const fileUrls = refs.map(r => r.url).filter(Boolean);
-    const refNotas = refs.filter(r => r.notas).map(r => `• ${r.nome || 'Ref'}: ${r.notas}`).join('\n');
-    const contentWithContext = refs.length > 0
-      ? `${text}\n\n[REFERÊNCIAS VISUAIS DO MEU ESTILO — ${refs.length} imagem(ns) anexada(s)${refNotas ? `:\n${refNotas}` : ''}]`
-      : text;
-
-    await base44.agents.addMessage(conv, {
-      role: 'user',
-      content: contentWithContext,
-      ...(fileUrls.length > 0 ? { file_urls: fileUrls } : {}),
-    });
-    setSending(false);
+    setThumbs(prev => [...prev, ...newThumbs]);
+    setLoading(false);
+    if (newThumbs.length > 0) toast.success('Variações geradas!');
   };
 
-  const handleUseRoteiro = () => {
-    if (!roteiroOriginal) return;
-    setInput(`Crie 3 variações de thumbnail para este vídeo:\n\nTítulo: ${roteiroOriginal.title || 'Sem título'}\n\nContexto do roteiro:\n${roteiroOriginal.text.slice(0, 600)}`);
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
+  const faceRefName = apresentadorSelecionado?.nome || (fotoAvulsa ? 'Foto enviada' : null);
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden animate-fade-in">
-      {/* Sidebar de conversas */}
-      <div className="hidden md:flex flex-col w-56 border-r border-border bg-card/50 flex-shrink-0">
-        <div className="p-3 border-b border-border">
-          <button
-            onClick={handleNewConversation}
-            className="w-full flex items-center justify-center gap-2 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-xs font-semibold transition-all"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Nova Sessão
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-2 space-y-1">
-          {conversations.length === 0 && (
-            <p className="text-[11px] text-muted-foreground text-center py-4">Nenhuma sessão ainda</p>
-          )}
-          {conversations.map((conv) => (
-            <button
-              key={conv.id}
-              onClick={() => handleSelectConversation(conv)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-all truncate ${
-                activeConv?.id === conv.id
-                  ? 'bg-primary/15 text-primary border border-primary/30'
-                  : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
-              }`}
-            >
-              {conv.metadata?.name || 'Sessão'}
-            </button>
-          ))}
-        </div>
-        <div className="p-2 border-t border-border">
-          <ReferenciaGaleria onRefsChange={setRefs} />
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-base font-bold text-foreground">Thumb Designer</h1>
+            <p className="text-xs text-muted-foreground">Gerador com Face Swap · 1280×720px</p>
+          </div>
         </div>
       </div>
 
-      {/* Chat principal */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-card/50 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-500/30 to-primary/30 border border-primary/20 flex items-center justify-center">
-              <ImageIcon className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Thumb Designer</p>
-              <p className="text-[11px] text-muted-foreground">Especialista MrBeast · 3 variações · 1280×720px</p>
+      {/* Configurações */}
+      <div className="bg-card border border-border rounded-xl p-5 space-y-5">
+        {/* Funil e Tipo de Texto */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2.5">
+            <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Tipo de Funil</label>
+            <div className="flex gap-2">
+              {[
+                { value: 'top', label: '🚀 Topo de Funil', desc: 'Emoção & Curiosidade' },
+                { value: 'bottom', label: '🎯 Fundo de Funil', desc: 'Autoridade & Confiança' },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setFunnel(opt.value)}
+                  className={`flex-1 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all ${
+                    funnel === opt.value
+                      ? 'bg-primary/20 border-primary/50 text-primary'
+                      : 'bg-secondary/30 border-border text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {opt.label}
+                  <p className="text-[10px] text-muted-foreground/70 mt-0.5">{opt.desc}</p>
+                </button>
+              ))}
             </div>
           </div>
+
+          <div className="space-y-2.5">
+            <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Tipo de Texto</label>
+            <div className="flex gap-2">
+              {[
+                { value: 'com', label: '📝 Com Texto Bold' },
+                { value: 'sem', label: '📸 Sem Texto' },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setTextType(opt.value)}
+                  className={`flex-1 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all ${
+                    textType === opt.value
+                      ? 'bg-primary/20 border-primary/50 text-primary'
+                      : 'bg-secondary/30 border-border text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Briefing */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Título do Vídeo <span className="text-destructive">*</span></label>
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ex: Seguro Viagem Vale a Pena?"
+                className="w-full bg-secondary/40 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Assunto / Contexto <span className="text-destructive">*</span></label>
+              <input
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="Ex: reembolso de bagagem extraviada"
+                className="w-full bg-secondary/40 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Elemento Visual <span className="text-[10px] text-muted-foreground/60 normal-case">(opcional)</span></label>
+            <input
+              value={visual}
+              onChange={(e) => setVisual(e.target.value)}
+              placeholder="Ex: mala de viagem, print de app com reembolso"
+              className="w-full bg-secondary/40 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Face Swap */}
+        <div className="space-y-3">
           <div className="flex items-center gap-2">
-            {roteiroOriginal && activeTab === 'chat' && (
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Apresentador para Face Swap</span>
+            {faceRefName && (
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">
+                ✓ {faceRefName}
+              </span>
+            )}
+          </div>
+
+          {apresentadores.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {apresentadores.map((a) => {
+                const sel = apresentadorSelecionado?.id === a.id;
+                return (
+                  <button
+                    key={a.id}
+                    onClick={() => {
+                      setApresentadorSelecionado(sel ? null : a);
+                      if (!sel) setFotoAvulsa(null);
+                    }}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
+                      sel
+                        ? 'bg-primary/20 border-primary/50 text-primary'
+                        : 'bg-secondary/30 border-border text-muted-foreground hover:text-foreground hover:border-primary/30'
+                    }`}
+                  >
+                    <img src={a.foto_url} alt={a.nome} className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+                    {a.nome}
+                    {sel && <Check className="w-3 h-3" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="flex items-center gap-3">
+            <div className="flex-1 border-t border-border" />
+            <span className="text-[11px] text-muted-foreground">ou envie uma foto</span>
+            <div className="flex-1 border-t border-border" />
+          </div>
+
+          <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${
+            fotoAvulsa
+              ? 'bg-green-500/10 border-green-500/30 text-green-400'
+              : 'bg-secondary/20 border-dashed border-border hover:border-primary/40 text-muted-foreground hover:text-foreground'
+          }`}>
+            {uploadingFoto ? (
+              <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
+            ) : fotoAvulsa ? (
+              <img src={fotoAvulsa} alt="ref" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
+            ) : (
+              <Upload className="w-4 h-4 flex-shrink-0" />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium">
+                {uploadingFoto ? 'Enviando...' : fotoAvulsa ? 'Foto de referência enviada' : 'Enviar foto de referência'}
+              </p>
+            </div>
+            {fotoAvulsa && (
               <button
-                onClick={handleUseRoteiro}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/15 border border-primary/30 rounded-lg text-xs text-primary font-medium transition-all"
+                onClick={(e) => { e.preventDefault(); setFotoAvulsa(null); }}
+                className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-red-500/20 transition-colors flex-shrink-0"
               >
-                <Wand2 className="w-3.5 h-3.5" />
-                Usar último roteiro
+                <X className="w-3 h-3" />
               </button>
             )}
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-green-500/10 border border-green-500/20 rounded-lg">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-[11px] text-green-400 font-medium">Online</span>
-            </div>
-          </div>
+            <input type="file" accept="image/*" className="hidden" onChange={handleUploadFotoAvulsa} />
+          </label>
         </div>
 
-        {/* Tabs */}
-        <div className="flex items-center gap-1 px-4 py-2 border-b border-border bg-card/30 flex-shrink-0">
+        {/* Botões */}
+        <div className="flex gap-2">
           <button
-            onClick={() => setActiveTab('chat')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              activeTab === 'chat' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
-            }`}
+            onClick={handleGerarUma}
+            disabled={loading || !title.trim() || !subject.trim()}
+            className="flex-1 flex items-center justify-center gap-2 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground rounded-xl font-semibold text-sm transition-all glow-blue"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            Chat IA
-          </button>
-          <button
-            onClick={() => setActiveTab('gerador')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              activeTab === 'gerador' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
-            }`}
-          >
-            <Wand2 className="w-3.5 h-3.5" />
-            Gerador + Face Swap
-          </button>
-          <button
-            onClick={() => setActiveTab('referencias')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              activeTab === 'referencias' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
-            }`}
-          >
-            <BookImage className="w-3.5 h-3.5" />
-            Referências
-            {refs.length > 0 && (
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${activeTab === 'referencias' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-primary/20 text-primary'}`}>
-                {refs.length}
-              </span>
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Gerando...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Gerar Thumbnail
+              </>
             )}
           </button>
-          <button
-            onClick={() => setActiveTab('historico')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              activeTab === 'historico' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
-            }`}
-          >
-            <History className="w-3.5 h-3.5" />
-            Histórico
-            {conversations.length > 0 && (
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${activeTab === 'historico' ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-primary/20 text-primary'}`}>
-                {conversations.length}
-              </span>
-            )}
-          </button>
+          {thumbs.length > 0 && (
+            <button
+              onClick={() => setThumbs([])}
+              disabled={loading}
+              className="px-4 py-3 bg-secondary/60 hover:bg-secondary border border-border rounded-xl text-xs text-muted-foreground hover:text-foreground transition-all disabled:opacity-50"
+            >
+              Limpar
+            </button>
+          )}
         </div>
+      </div>
 
-        {/* Painel: Chat */}
-        <div className={`flex-1 overflow-y-auto p-5 space-y-4 ${activeTab !== 'chat' ? 'hidden' : ''}`}>
-          {!activeConv && messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-center px-6">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-yellow-500/20 to-primary/20 border border-primary/20 flex items-center justify-center mb-4">
-                <Sparkles className="w-8 h-8 text-primary" />
+      {/* Resultados */}
+      {(thumbs.length > 0 || loading) && (
+        <div className="space-y-3">
+          {loading && !thumbs.length && (
+            <div className="flex items-center justify-center py-16 border border-border rounded-xl bg-card">
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative w-16 h-16">
+                  <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
+                  <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                  <Sparkles className="absolute inset-0 m-auto w-6 h-6 text-primary" />
+                </div>
+                <p className="text-sm text-foreground">Gerando sua thumbnail...</p>
               </div>
-              <h2 className="text-base font-bold text-foreground mb-2">Thumb Designer IA</h2>
-              <p className="text-sm text-muted-foreground mb-1">Especialista no estilo MrBeast</p>
-              <p className="text-xs text-muted-foreground/70 max-w-xs">
-                Diga o título e contexto do vídeo. O agente gera 3 prompts prontos — Com Texto Bold, Sem Texto Visual e Versão Agressiva — sempre em 1280×720px.
-              </p>
-              <div className="mt-6 flex flex-wrap gap-2 justify-center">
-                {[
-                  'Crie thumbs para um vídeo sobre seguro viagem',
-                  'Thumbnail para vídeo de comparação de seguros',
-                  'Quero uma versão fundo de funil com autoridade',
-                ].map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setInput(s)}
-                    className="text-xs px-3 py-1.5 bg-secondary/60 hover:bg-secondary border border-border rounded-full text-muted-foreground hover:text-foreground transition-all"
+            </div>
+          )}
+
+          {thumbs.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-foreground">{thumbs.length} imagem(ns) gerada(s)</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {thumbs.map((thumb, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="group relative bg-card border border-border rounded-xl overflow-hidden hover:border-primary/40 transition-all"
                   >
-                    {s}
-                  </button>
+                    <div className="w-full aspect-video relative overflow-hidden bg-secondary/30">
+                      <img src={thumb.url} alt={`Thumb ${i + 1}`} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <a
+                          href={thumb.url}
+                          download
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors text-white text-sm font-medium"
+                        >
+                          <Wand2 className="w-4 h-4" />
+                          Baixar
+                        </a>
+                      </div>
+                    </div>
+                    <div className="p-3 flex items-center gap-2">
+                      <span className="text-[10px] font-mono text-muted-foreground">#{i + 1}</span>
+                      {thumb.label && <span className="text-[10px] font-mono text-primary">{thumb.label}</span>}
+                      {thumb.faceSwapAplicado && (
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-green-500/10 text-green-400 border border-green-500/20">
+                          face swap ✓
+                        </span>
+                      )}
+                    </div>
+                  </motion.div>
                 ))}
               </div>
+
+              {!loading && (
+                <button
+                  onClick={handleGerarVariacoes}
+                  className="w-full py-3 bg-secondary/60 hover:bg-secondary border border-border rounded-xl text-sm font-semibold text-foreground transition-all"
+                >
+                  <Plus className="w-4 h-4 inline mr-2" />
+                  Gerar Variações
+                </button>
+              )}
             </div>
           )}
-
-          <AnimatePresence initial={false}>
-            {messages.map((msg, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <MessageBubble message={msg} />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-
-          {sending && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3">
-              <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-yellow-500/20 to-primary/20 border border-primary/20 flex items-center justify-center mt-0.5">
-                <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
-              </div>
-              <div className="bg-card border border-border rounded-2xl px-4 py-2.5">
-                <div className="flex gap-1 items-center h-5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
-              </div>
-            </motion.div>
-          )}
-          <div ref={messagesEndRef} />
         </div>
+      )}
 
-        {/* Painel: Gerador com Face Swap */}
-        {activeTab === 'gerador' && (
-          <div className="flex-1 overflow-y-auto p-4 md:p-6">
-            <GeradorComFaceSwap />
-          </div>
-        )}
-
-        {/* Painel: Referências */}
-        {activeTab === 'referencias' && (
-          <div className="flex-1 overflow-y-auto p-4">
-            <ReferenciaGaleria onRefsChange={setRefs} alwaysExpanded />
-          </div>
-        )}
-
-        {/* Painel: Histórico */}
-        {activeTab === 'historico' && (
-          <div className="flex-1 overflow-y-auto">
-            <HistoricoGeracoes conversations={conversations} />
-          </div>
-        )}
-
-        {/* Input — só no chat */}
-        <div className={`p-4 border-t border-border bg-card/30 flex-shrink-0 ${activeTab !== 'chat' ? 'hidden' : ''}`}>
-          <div className="flex gap-3 items-end">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Descreva o vídeo para gerar as 3 variações de thumbnail..."
-              rows={2}
-              className="flex-1 bg-secondary/40 border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors resize-none"
-            />
-            <button
-              onClick={handleSend}
-              disabled={!input.trim() || sending}
-              className="w-11 h-11 flex items-center justify-center bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground rounded-xl transition-all glow-blue flex-shrink-0"
-            >
-              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            </button>
-          </div>
-          <p className="text-[10px] text-muted-foreground mt-2 text-center">Enter para enviar · Shift+Enter para nova linha</p>
+      {thumbs.length === 0 && !loading && (
+        <div className="flex flex-col items-center justify-center py-16 border-2 border-dashed border-border rounded-xl text-center">
+          <ImageIcon className="w-10 h-10 text-muted-foreground/30 mb-3" />
+          <p className="text-sm text-muted-foreground">Preencha as informações acima e clique em "Gerar Thumbnail"</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">Será gerada 1 imagem · clique em "Gerar Variações" para mais opções</p>
         </div>
+      )}
+
+      {/* Referências na lateral */}
+      <div className="bg-card border border-border rounded-xl p-5">
+        <ReferenciaGaleria onRefsChange={setRefs} alwaysExpanded />
       </div>
     </div>
   );
