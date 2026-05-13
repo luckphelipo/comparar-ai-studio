@@ -1,6 +1,6 @@
 Deno.serve(async (req) => {
   try {
-    const { prompt, image_refs, style_refs } = await req.json();
+    const { prompt, image_refs } = await req.json();
 
     if (!prompt) return Response.json({ error: 'prompt is required' }, { status: 400 });
 
@@ -23,16 +23,15 @@ Deno.serve(async (req) => {
       throw new Error("Timeout: geração demorou mais de 2 minutos");
     };
 
-    // 1. Gerar a thumbnail com FLUX.1
-    const genRes = await fetch("https://api.wavespeed.ai/api/v3/wavespeed-ai/flux-dev", {
+    // 1. Gerar a thumbnail com GPT Image 2
+    const genRes = await fetch("https://api.wavespeed.ai/api/v3/openai/gpt-image-2/text-to-image", {
       method: "POST",
       headers,
       body: JSON.stringify({
         prompt,
-        size: "1280*720",
-        num_inference_steps: 28,
-        guidance_scale: 3.5,
-        num_images: 1,
+        aspect_ratio: "16:9",
+        resolution: "1k",
+        quality: "medium",
         output_format: "jpeg",
         enable_sync_mode: false,
       }),
