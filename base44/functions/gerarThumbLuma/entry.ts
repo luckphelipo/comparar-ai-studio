@@ -1,76 +1,70 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
-
 Deno.serve(async (req) => {
   try {
-    const base44 = createClientFromRequest(req);
     const { prompt, image_refs, style_refs } = await req.json();
 
     if (!prompt) return Response.json({ error: 'prompt is required' }, { status: 400 });
 
-    const LUMA_API_KEY = Deno.env.get("LUMA");
+    const API_KEY = Deno.env.get("wavespeed");
 
-    const body = {
-      prompt,
-      aspect_ratio: "16:9",
-      model: "photon-1",
+    const headers = {
+      "Authorization": `Bearer ${API_KEY}`,
+      "Content-Type": "application/json",
     };
 
-    // character_ref: fotos do apresentador (até 4 imagens)
-    if (image_refs && image_refs.length > 0) {
-      body.character_ref = {
-        identity0: {
-          images: image_refs.slice(0, 4),
-        },
-      };
-    }
+    // Helper: polling de resultado
+    const pollResult = async (requestId) => {
+      for (let i = 0; i < 40; i++) {
+        await new Promise(r => setTimeout(r, 3000));
+        const res = await fetch(`https://api.wavespeed.ai/api/v3/predictions/${requestId}/result`, { headers });
+        const data = await res.json();
+        if (data.data?.status === "completed") return data.data.outputs[0];
+        if (data.data?.status === "failed") throw new Error(data.data.error || "Generation failed");
+      }
+      throw new Error("Timeout: geração demorou mais de 2 minutos");
+    };
 
-    // style_ref: thumbnails de referência de estilo
-    if (style_refs && style_refs.length > 0) {
-      body.style_ref = style_refs.slice(0, 4).map(url => ({ url, weight: 0.8 }));
-    }
-
-    // 1. Criar a geração
-    const createRes = await fetch("https://api.lumalabs.ai/dream-machine/v1/generations/image", {
+    // 1. Gerar a thumbnail com FLUX.1
+    const genRes = await fetch("https://api.wavespeed.ai/api/v3/wavespeed-ai/flux-dev", {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${LUMA_API_KEY}`,
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-      },
-      body: JSON.stringify(body),
+      headers,
+      body: JSON.stringify({
+        prompt,
+        size: "1280*720",
+        num_inference_steps: 28,
+        guidance_scale: 3.5,
+        num_images: 1,
+        output_format: "jpeg",
+        enable_sync_mode: false,
+      }),
     });
 
-    const createData = await createRes.json();
-
-    if (!createRes.ok) {
-      return Response.json({ error: createData?.detail || createData?.message || "Luma API error" }, { status: 500 });
+    const genData = await genRes.json();
+    if (!genRes.ok || !genData.data?.id) {
+      return Response.json({ error: genData?.message || "Erro ao criar geração" }, { status: 500 });
     }
 
-    const generationId = createData.id;
+    let thumbUrl = await pollResult(genData.data.id);
 
-    // 2. Polling até completar (máx 120s)
-    for (let i = 0; i < 40; i++) {
-      await new Promise(r => setTimeout(r, 3000));
-
-      const pollRes = await fetch(`https://api.lumalabs.ai/dream-machine/v1/generations/${generationId}`, {
-        headers: {
-          "Authorization": `Bearer ${LUMA_API_KEY}`,
-          "Accept": "application/json",
-        },
+    // 2. Se tiver foto do apresentador, fazer face swap
+    if (image_refs && image_refs.length > 0) {
+      const faceRes = await fetch("https://api.wavespeed.ai/api/v3/wavespeed-ai/image-face-swap", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          image: thumbUrl,
+          face_image: image_refs[0],
+          output_format: "jpeg",
+          enable_sync_mode: false,
+        }),
       });
 
-      const pollData = await pollRes.json();
-
-      if (pollData.state === "completed") {
-        return Response.json({ url: pollData.assets.image });
-      }
-
-      if (pollData.state === "failed") {
-        return Response.json({ error: pollData.failure_reason || "Generation failed" }, { status: 500 });
+      const faceData = await faceRes.json();
+      if (faceRes.ok && faceData.data?.id) {
+        thumbUrl = await pollResult(faceData.data.id);
       }
     }
 
-    return Response.json({ error: "Timeout: geração demorou mais de 2 minutos" }, { status: 504 });
+    return Response.json({ url: thumbUrl });
 
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
