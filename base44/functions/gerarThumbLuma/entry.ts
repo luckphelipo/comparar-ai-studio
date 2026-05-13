@@ -44,22 +44,25 @@ Deno.serve(async (req) => {
 
     let thumbUrl = await pollResult(genData.data.id);
 
-    // 2. Se tiver foto do apresentador, fazer face swap
+    // 2. Se tiver foto do apresentador, usar GPT Image 2 Edit para aplicar o rosto
     if (image_refs && image_refs.length > 0) {
-      const faceRes = await fetch("https://api.wavespeed.ai/api/v3/wavespeed-ai/image-face-swap", {
+      const editRes = await fetch("https://api.wavespeed.ai/api/v3/openai/gpt-image-2/edit", {
         method: "POST",
         headers,
         body: JSON.stringify({
-          image: thumbUrl,
-          face_image: image_refs[0],
+          images: [thumbUrl, image_refs[0]],
+          prompt: "Keep the entire thumbnail exactly as it is — composition, background, text, colors, and all visual elements must remain identical. The only change is: replace the face of the person in the thumbnail with the face from the second reference image. Match the lighting, skin tone, and expression style of the original. Do not alter anything else.",
+          aspect_ratio: "16:9",
+          resolution: "1k",
+          quality: "medium",
           output_format: "jpeg",
           enable_sync_mode: false,
         }),
       });
 
-      const faceData = await faceRes.json();
-      if (faceRes.ok && faceData.data?.id) {
-        thumbUrl = await pollResult(faceData.data.id);
+      const editData = await editRes.json();
+      if (editRes.ok && editData.data?.id) {
+        thumbUrl = await pollResult(editData.data.id);
       }
     }
 
