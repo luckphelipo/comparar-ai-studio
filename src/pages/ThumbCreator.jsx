@@ -423,7 +423,10 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
                   <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
                   <Sparkles className="absolute inset-0 m-auto w-6 h-6 text-primary" />
                 </div>
-                <p className="text-sm text-foreground">Gerando sua thumbnail...</p>
+                <div className="text-center">
+                  <p className="text-sm font-medium text-foreground">Gerando sua thumbnail...</p>
+                  <p className="text-xs text-muted-foreground mt-2">Isto pode levar alguns segundos</p>
+                </div>
               </div>
             </div>
           )}
