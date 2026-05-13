@@ -14,6 +14,7 @@ import {
   Users,
   TrendingUp,
 } from 'lucide-react';
+import CreditosChart from '../dashboard/CreditosChart';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
@@ -57,6 +58,13 @@ export default function Sidebar({ collapsed = false }) {
           </motion.div>
         )}
       </div>
+
+      {/* Créditos */}
+      {!collapsed && (
+        <div className="px-2 py-3 border-b border-border">
+          <CreditosChart />
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
