@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 
 export default function ThumbCreator() {
   const { roteiroOriginal } = useRoteiro();
-  const { registerJob, setCurrentJobId } = useJobs();
+  const { registerJob } = useJobs();
   const [refs, setRefs] = useState([]);
   
   // Gerador
@@ -115,7 +115,6 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
 
     const jobId = `thumb_${Date.now()}`;
     registerJob(jobId, 'thumbnail', { title, subject, visual, comPersonagem });
-    setCurrentJobId(jobId);
     setLoading(true);
     setProgress(10);
 
@@ -144,7 +143,6 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
     if (!url) {
       toast.error('Erro ao gerar thumbnail');
       setLoading(false);
-      setCurrentJobId(null);
     } else {
       setThumbs([{ url, faceSwapAplicado: !!faceImageUrl }]);
       setProgress(100);
@@ -161,7 +159,6 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
 
     const jobId = `thumb_variations_${Date.now()}`;
     registerJob(jobId, 'thumbnail', { title, subject, visual, comPersonagem });
-    setCurrentJobId(jobId);
     setLoading(true);
     setProgress(10);
 
