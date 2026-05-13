@@ -87,8 +87,24 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
     e.target.value = '';
   };
 
-  // Filtrar referências pelo funil selecionado
-  const refsParaFunnel = refs.filter(r => !r.funil || r.funil === 'ambos' || r.funil === funnel).map(r => r.url).filter(Boolean);
+  // Filtrar referências pelo funil selecionado e tags
+  const refsParaFunnel = refs.filter(r => {
+    // Filtra por funil
+    const funnelMatch = !r.funil || r.funil === 'ambos' || r.funil === funnel;
+    if (!funnelMatch) return false;
+    
+    // Filtra por tags (se existem)
+    const tags = (r.tags || []).map(t => t.toLowerCase());
+    if (tags.length === 0) return true; // Referências sem tags são incluídas sempre
+    
+    // Verifica tags relevantes
+    const relevantTags = [];
+    if (comPersonagem) relevantTags.push('com personagem');
+    else relevantTags.push('sem personagem');
+    
+    // Retorna referências que têm pelo menos uma tag relevante
+    return relevantTags.some(tag => tags.includes(tag));
+  }).map(r => r.url).filter(Boolean);
 
   const buildPrompt = ({ title, subject, visual, personDesc }) => {
     const funnelDesc = funnel === 'topo' 

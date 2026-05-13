@@ -8,6 +8,7 @@ export default function ReferenciaGaleria({ onRefsChange, alwaysExpanded = false
   const [uploading, setUploading] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [editingNota, setEditingNota] = useState(null);
+  const [editingTags, setEditingTags] = useState(null);
   const fileInputRef = useRef(null);
   const isOpen = alwaysExpanded || expanded;
 
@@ -48,6 +49,12 @@ export default function ReferenciaGaleria({ onRefsChange, alwaysExpanded = false
   const handleSaveNota = async (id, notas) => {
     await base44.entities.ReferenciaThumb.update(id, { notas });
     setEditingNota(null);
+    await loadRefs();
+  };
+
+  const handleSaveTags = async (id, tags) => {
+    await base44.entities.ReferenciaThumb.update(id, { tags });
+    setEditingTags(null);
     await loadRefs();
   };
 
@@ -127,6 +134,33 @@ export default function ReferenciaGaleria({ onRefsChange, alwaysExpanded = false
                         <Trash2 className="w-3 h-3 text-white" />
                       </button>
                     </div>
+                    {/* Tags */}
+                    <div className="px-2 pt-1.5 pb-0">
+                      {editingTags === ref.id ? (
+                        <TagsEditor
+                          initial={ref.tags || []}
+                          onSave={(v) => handleSaveTags(ref.id, v)}
+                          onCancel={() => setEditingTags(null)}
+                        />
+                      ) : (
+                        <button
+                          onClick={() => setEditingTags(ref.id)}
+                          className="w-full text-left"
+                        >
+                          {(ref.tags || []).length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {ref.tags.map((tag, i) => (
+                                <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-[10px] italic text-muted-foreground/60 block">+ adicionar tags</span>
+                          )}
+                        </button>
+                      )}
+                    </div>
                     {/* Nota editável */}
                     <div className="p-2">
                       {editingNota === ref.id ? (
@@ -169,6 +203,26 @@ function NotaEditor({ initial, onSave, onCancel }) {
       />
       <div className="flex gap-1">
         <button onClick={() => onSave(value)} className="text-[10px] px-2 py-0.5 bg-primary text-primary-foreground rounded font-medium">Salvar</button>
+        <button onClick={onCancel} className="text-[10px] px-2 py-0.5 bg-secondary text-muted-foreground rounded">Cancelar</button>
+      </div>
+    </div>
+  );
+}
+
+function TagsEditor({ initial = [], onSave, onCancel }) {
+  const [value, setValue] = useState(initial.join(', '));
+  return (
+    <div className="space-y-1">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="Ex: sem personagem, topo, com texto"
+        autoFocus
+        className="w-full bg-secondary/60 border border-primary/30 rounded px-2 py-1 text-[10px] text-foreground focus:outline-none"
+      />
+      <div className="flex gap-1">
+        <button onClick={() => onSave(value.split(',').map(t => t.trim()).filter(Boolean))} className="text-[10px] px-2 py-0.5 bg-primary text-primary-foreground rounded font-medium">Salvar</button>
         <button onClick={onCancel} className="text-[10px] px-2 py-0.5 bg-secondary text-muted-foreground rounded">Cancelar</button>
       </div>
     </div>

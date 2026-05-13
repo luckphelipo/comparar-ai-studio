@@ -23,6 +23,14 @@
       ],
       "default": "ambos",
       "description": "A qual funil esta refer\u00eancia pertence"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Tags para a IA se basear (ex: 'sem personagem', 'com texto', 'minimalista')"
     }
   },
   "required": [
