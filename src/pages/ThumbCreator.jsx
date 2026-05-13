@@ -25,6 +25,7 @@ export default function ThumbCreator() {
   
   const [thumbs, setThumbs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [resumindoRoteiro, setResumindoRoteiro] = useState(false);
 
   useEffect(() => {
@@ -116,13 +117,22 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
       : '';
 
     setLoading(true);
+    setProgress(10);
     const prompt = buildPrompt({ title, subject, visual, personDesc });
+
+    // Simula aumento gradual de progresso
+    const progressInterval = setInterval(() => {
+      setProgress(prev => Math.min(prev + Math.random() * 20, 90));
+    }, 1000);
 
     const response = await base44.functions.invoke('gerarThumbLuma', {
       prompt,
       ...(faceImageUrl ? { image_refs: [faceImageUrl] } : {}),
       ...(refsParaFunnel.length > 0 ? { style_refs: refsParaFunnel.slice(0, 3) } : {}),
     });
+
+    clearInterval(progressInterval);
+    setProgress(100);
 
     const url = response.data?.url;
     if (!url) {
@@ -132,6 +142,7 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
       toast.success('Thumbnail gerada!');
     }
     setLoading(false);
+    setProgress(0);
   };
 
   const handleGerarVariacoes = async () => {
@@ -146,11 +157,16 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
       : '';
 
     setLoading(true);
+    setProgress(10);
     
     const types = [
       { type: 'com', label: 'Com Texto' },
       { type: 'sem', label: 'Sem Texto' },
     ];
+
+    const progressInterval = setInterval(() => {
+      setProgress(prev => Math.min(prev + Math.random() * 15, 90));
+    }, 1000);
 
     const newThumbs = [];
     for (const { type, label } of types) {
@@ -169,8 +185,11 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
       }
     }
 
+    clearInterval(progressInterval);
+    setProgress(100);
     setThumbs(prev => [...prev, ...newThumbs]);
     setLoading(false);
+    setProgress(0);
     if (newThumbs.length > 0) toast.success('Variações geradas!');
   };
 
@@ -417,15 +436,26 @@ Responda APENAS com a frase de resumo, sem aspas, sem explicações.`,
         <div className="space-y-3">
           {loading && !thumbs.length && (
             <div className="flex items-center justify-center py-16 border border-border rounded-xl bg-card">
-              <div className="flex flex-col items-center gap-4">
+              <div className="flex flex-col items-center gap-4 w-full px-8">
                 <div className="relative w-16 h-16">
                   <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
                   <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
                   <Sparkles className="absolute inset-0 m-auto w-6 h-6 text-primary" />
                 </div>
-                <div className="text-center">
+                <div className="text-center w-full">
                   <p className="text-sm font-medium text-foreground">Gerando sua thumbnail...</p>
                   <p className="text-xs text-muted-foreground mt-2">Isto pode levar alguns segundos</p>
+                </div>
+                <div className="w-full max-w-xs">
+                  <div className="bg-secondary/30 rounded-full h-2 overflow-hidden">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-primary to-primary/50"
+                      initial={{ width: '0%' }}
+                      animate={{ width: `${progress}%` }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2 text-center font-mono">{progress}%</p>
                 </div>
               </div>
             </div>
