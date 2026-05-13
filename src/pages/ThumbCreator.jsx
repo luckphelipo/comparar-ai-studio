@@ -49,6 +49,7 @@ export default function ThumbCreator() {
   useEffect(() => {
     if (roteiroOriginal) {
       setTitle(roteiroOriginal.title || '');
+      toast.success('📋 Roteiro analisado carregado!');
     }
   }, [roteiroOriginal]);
 

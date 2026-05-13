@@ -1,12 +1,32 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 
 const RoteiroContext = createContext(null);
 
 export function RoteiroProvider({ children }) {
-  const [resultado, setResultado] = useState(null);
-  const [roteiroOriginal, setRoteiroOriginal] = useState(null);
+  const [resultado, setResultado] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('roteiroResultado'));
+    } catch {
+      return null;
+    }
+  });
+  const [roteiroOriginal, setRoteiroOriginal] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('roteiroOriginal'));
+    } catch {
+      return null;
+    }
+  });
   const [roteiroOtimizado, setRoteiroOtimizado] = useState(null);
   const [sugestoesTitulo, setSugestoesTitulo] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem('roteiroResultado', JSON.stringify(resultado));
+  }, [resultado]);
+
+  useEffect(() => {
+    localStorage.setItem('roteiroOriginal', JSON.stringify(roteiroOriginal));
+  }, [roteiroOriginal]);
 
   return (
     <RoteiroContext.Provider value={{
