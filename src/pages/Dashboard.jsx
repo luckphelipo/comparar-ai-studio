@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import MetricCard from '../components/dashboard/MetricCard';
 import ScoreRing from '../components/dashboard/ScoreRing';
+import CreditosChart from '../components/dashboard/CreditosChart';
 import { useFunnel } from '@/lib/FunnelContext';
 
 const RecentProjects = lazy(() => import('../components/dashboard/RecentProjects'));
@@ -53,6 +54,9 @@ export default function Dashboard() {
           </div>
         </div>
       </motion.div>
+
+      {/* Créditos */}
+      <CreditosChart />
 
       {/* Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
