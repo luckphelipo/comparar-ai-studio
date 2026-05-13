@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useFunnel } from '@/lib/FunnelContext';
 import { useRoteiro } from '@/lib/RoteiroContext';
@@ -33,7 +33,7 @@ export default function Roteiro() {
     }
   };
 
-  useState(() => {
+  useEffect(() => {
     carregarAnalisesMes();
   }, []);
 
@@ -56,9 +56,11 @@ export default function Roteiro() {
     }
 
     // Descontar uma análise
+    const novasAnalises = Math.max(0, (user.analises_restantes_mes || 20) - 1);
     await base44.auth.updateMe({
-      analises_restantes_mes: Math.max(0, (user.analises_restantes_mes || 20) - 1)
+      analises_restantes_mes: novasAnalises
     });
+    setAnalisesMes(novasAnalises);
 
     const funnelContext = funnel === 'top'
       ? 'Topo de Funil (ToFu) — viralização, alcance, emoção, curiosidade'
