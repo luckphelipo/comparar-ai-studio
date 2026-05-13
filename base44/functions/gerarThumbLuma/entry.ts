@@ -13,14 +13,14 @@ Deno.serve(async (req) => {
 
     // Helper: polling de resultado
     const pollResult = async (requestId) => {
-      for (let i = 0; i < 40; i++) {
+      for (let i = 0; i < 120; i++) { // 120 * 3 segundos = 6 minutos
         await new Promise(r => setTimeout(r, 3000));
         const res = await fetch(`https://api.wavespeed.ai/api/v3/predictions/${requestId}/result`, { headers });
         const data = await res.json();
         if (data.data?.status === "completed") return data.data.outputs[0];
         if (data.data?.status === "failed") throw new Error(data.data.error || "Generation failed");
       }
-      throw new Error("Timeout: geração demorou mais de 2 minutos");
+      throw new Error("Timeout: geração demorou mais de 6 minutos");
     };
 
     let thumbUrl;
