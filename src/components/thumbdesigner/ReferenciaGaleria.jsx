@@ -210,20 +210,119 @@ function NotaEditor({ initial, onSave, onCancel }) {
 }
 
 function TagsEditor({ initial = [], onSave, onCancel }) {
-  const [value, setValue] = useState(initial.join(', '));
+  const predefinedTags = [
+    'Topo de Funil', 'Fundo de Funil',
+    'Personagem', 'Sem Personagem', 'Com Texto', 'Sem Texto',
+    'Informativa', 'Curiosidade', 'Chamativa', 'Contraste Alto',
+    'Antes e Depois', 'Expressão Facial', 'Lista', 'Minimalista', 'Urgência'
+  ];
+
+  const [selectedTags, setSelectedTags] = useState(initial);
+  const [customInput, setCustomInput] = useState('');
+  const [showCustom, setShowCustom] = useState(false);
+
+  const toggleTag = (tag) => {
+    setSelectedTags(prev =>
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+  };
+
+  const addCustomTag = () => {
+    if (customInput.trim() && !selectedTags.includes(customInput.trim())) {
+      setSelectedTags(prev => [...prev, customInput.trim()]);
+      setCustomInput('');
+      setShowCustom(false);
+    }
+  };
+
   return (
-    <div className="space-y-1">
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder="Ex: sem personagem, topo, com texto"
-        autoFocus
-        className="w-full bg-secondary/60 border border-primary/30 rounded px-2 py-1 text-[10px] text-foreground focus:outline-none"
-      />
-      <div className="flex gap-1">
-        <button onClick={() => onSave(value.split(',').map(t => t.trim()).filter(Boolean))} className="text-[10px] px-2 py-0.5 bg-primary text-primary-foreground rounded font-medium">Salvar</button>
-        <button onClick={onCancel} className="text-[10px] px-2 py-0.5 bg-secondary text-muted-foreground rounded">Cancelar</button>
+    <div className="space-y-2">
+      {/* Tags predefinidas */}
+      <div className="flex flex-wrap gap-1">
+        {predefinedTags.map((tag) => (
+          <button
+            key={tag}
+            onClick={() => toggleTag(tag)}
+            className={`text-[9px] px-2 py-1 rounded border transition-all ${
+              selectedTags.includes(tag)
+                ? 'bg-primary/30 border-primary/50 text-primary font-medium'
+                : 'bg-secondary/30 border-border text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {tag}
+          </button>
+        ))}
+      </div>
+
+      {/* Custom tag input */}
+      {showCustom ? (
+        <div className="flex gap-1">
+          <input
+            type="text"
+            value={customInput}
+            onChange={(e) => setCustomInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && addCustomTag()}
+            placeholder="Nova tag..."
+            autoFocus
+            className="flex-1 bg-secondary/60 border border-primary/30 rounded px-2 py-1 text-[9px] text-foreground focus:outline-none"
+          />
+          <button
+            onClick={addCustomTag}
+            disabled={!customInput.trim()}
+            className="text-[9px] px-2 py-1 bg-primary/20 text-primary rounded border border-primary/30 font-medium disabled:opacity-50"
+          >
+            Adicionar
+          </button>
+          <button
+            onClick={() => { setShowCustom(false); setCustomInput(''); }}
+            className="text-[9px] px-2 py-1 bg-secondary/30 text-muted-foreground rounded"
+          >
+            ✕
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setShowCustom(true)}
+          className="text-[9px] px-2 py-1 rounded border border-dashed border-primary/30 text-primary hover:bg-primary/5 transition-colors"
+        >
+          + Criar nova tag
+        </button>
+      )}
+
+      {/* Selected tags preview */}
+      {selectedTags.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {selectedTags.map((tag) => (
+            <span
+              key={tag}
+              className="text-[8px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium flex items-center gap-1"
+            >
+              {tag}
+              <button
+                onClick={() => setSelectedTags(prev => prev.filter(t => t !== tag))}
+                className="hover:text-destructive transition-colors"
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Save/Cancel buttons */}
+      <div className="flex gap-1 pt-1">
+        <button
+          onClick={() => onSave(selectedTags)}
+          className="text-[10px] px-2 py-0.5 bg-primary text-primary-foreground rounded font-medium hover:bg-primary/90 transition-colors"
+        >
+          Salvar
+        </button>
+        <button
+          onClick={onCancel}
+          className="text-[10px] px-2 py-0.5 bg-secondary text-muted-foreground rounded hover:bg-secondary/80 transition-colors"
+        >
+          Cancelar
+        </button>
       </div>
     </div>
   );
