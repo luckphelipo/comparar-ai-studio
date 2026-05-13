@@ -1,51 +1,17 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, RefreshCw, Download, Users, Check, X, ChevronRight, Loader2, Upload, ImageIcon, BookImage } from 'lucide-react';
+import { Sparkles, RefreshCw, Download, Users, Check, X, Loader2, Upload, ImageIcon, BookImage } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRoteiro } from '@/lib/RoteiroContext';
 
-const VARIACOES = [
-  {
-    id: 'com_texto',
-    label: 'Com Texto Bold',
-    badge: 'TEXTO',
-    badgeColor: 'bg-yellow-500/20 text-yellow-400',
-    buildPrompt: ({ title, subject, visual, personDesc }) =>
-      `YouTube thumbnail 1280x720, estilo YouTube Brasil viral. ` +
-      `Texto ENORME em negrito ocupando 40% da tela à esquerda, cor amarelo vibrante com contorno preto, tipografia impact/condensed. ` +
-      `${personDesc ? `Pessoa ${personDesc} posicionada à direita, expressão intensa olhando para câmera.` : 'Pessoa em destaque à direita, expressão intensa.'} ` +
-      `${visual ? `Elemento visual em destaque: ${visual}.` : ''} ` +
-      `Fundo fotorrealista relacionado a "${subject}", iluminação dramática com leve desfoque. ` +
-      `Borda azul elétrica fina ao redor da imagem. Alta saturação, alto contraste, impacto visual imediato. ` +
-      `Referência de estilo: MrBeast Brasil. Proporção 16:9, qualidade fotorrealista.`,
-  },
-  {
-    id: 'sem_texto',
-    label: 'Sem Texto',
-    badge: 'VISUAL',
-    badgeColor: 'bg-blue-500/20 text-blue-400',
-    buildPrompt: ({ subject, visual, personDesc }) =>
-      `YouTube thumbnail 1280x720, estilo MrBeast Brasil viral, SEM TEXTO, SEM LETRAS, SEM PALAVRAS. ` +
-      `${personDesc ? `Pessoa ${personDesc}` : 'Homem jovem'} com expressão de CHOQUE EXTREMO — boca aberta, olhos arregalados, apontando para elemento na cena. ` +
-      `${visual ? `Elemento principal: ${visual}.` : `Elemento relacionado a "${subject}".`} ` +
-      `Fundo fotorrealista icônico relacionado a "${subject}", iluminação dourada dramática. ` +
-      `Cores altamente saturadas, alto contraste, fotorrealismo profissional. Proporção 16:9.`,
-  },
-  {
-    id: 'agressiva',
-    label: 'Versão Agressiva',
-    badge: 'VIRAL',
-    badgeColor: 'bg-red-500/20 text-red-400',
-    buildPrompt: ({ subject, visual, personDesc }) =>
-      `YouTube thumbnail 1280x720, estilo MrBeast máximo impacto. ` +
-      `Texto GIGANTESCO em amarelo com contorno preto, letras maiúsculas bold condensed. ` +
-      `${personDesc ? `Pessoa ${personDesc} com expressão CHOCADA exagerada, boca aberta, olhos arregalados.` : 'Pessoa com expressão chocada exagerada.'} ` +
-      `${visual ? `Elemento visual exagerado: ${visual}.` : ''} ` +
-      `Seta vermelha apontando para elemento principal. Fundo com efeito de luz dramático relacionado a "${subject}". ` +
-      `Cores extremamente saturadas. Borda azul brilhante. Máximo clickbait visual. Proporção 16:9, qualidade fotorrealista.`,
-  },
-];
+const buildPrompt = ({ title, subject, visual, personDesc }) =>
+  `YouTube thumbnail 1280x720, estilo YouTube Brasil viral. ` +
+  `${personDesc ? `Pessoa ${personDesc} em destaque, expressão intensa olhando para câmera.` : 'Pessoa em destaque, expressão intensa.'} ` +
+  `${visual ? `Elemento visual em destaque: ${visual}.` : ''} ` +
+  `Fundo fotorrealista relacionado a "${subject}", iluminação dramática com leve desfoque. ` +
+  `Alta saturação, alto contraste, impacto visual imediato. ` +
+  `Referência de estilo: MrBeast Brasil. Título do vídeo: "${title}". Proporção 16:9, qualidade fotorrealista.`;
 
 export default function GeradorComFaceSwap() {
   const { roteiroOriginal } = useRoteiro();
@@ -62,7 +28,6 @@ export default function GeradorComFaceSwap() {
 
   const [thumbs, setThumbs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [loadingIdx, setLoadingIdx] = useState(0);
 
   useEffect(() => {
     base44.entities.Apresentador.list('-created_date').then(setApresentadores);
@@ -89,51 +54,34 @@ export default function GeradorComFaceSwap() {
     e.target.value = '';
   };
 
-  const handleGerar = async () => {
+  const gerarUma = async () => {
     if (!title.trim() || !subject.trim()) {
       toast.error('Preencha o título e o assunto do vídeo.');
       return;
     }
 
-    // Determina a foto de referência para o face swap
     const faceImageUrl = apresentadorSelecionado?.foto_url || fotoAvulsa || null;
     const personDesc = apresentadorSelecionado
       ? apresentadorSelecionado.descricao || apresentadorSelecionado.nome
       : '';
 
     setLoading(true);
-    setThumbs([]);
-    const results = [];
+    const prompt = buildPrompt({ title, subject, visual, personDesc });
 
-    for (let i = 0; i < VARIACOES.length; i++) {
-      setLoadingIdx(i + 1);
-      const v = VARIACOES[i];
-      const prompt = v.buildPrompt({ title, subject, visual, personDesc });
+    const response = await base44.functions.invoke('gerarThumbLuma', {
+      prompt,
+      ...(faceImageUrl ? { image_refs: [faceImageUrl] } : {}),
+      ...(styleRefs.length > 0 ? { style_refs: styleRefs.slice(0, 3) } : {}),
+    });
 
-      const response = await base44.functions.invoke('gerarThumbLuma', {
-        prompt,
-        ...(faceImageUrl ? { image_refs: [faceImageUrl] } : {}),
-        ...(styleRefs.length > 0 ? { style_refs: styleRefs.slice(0, 3) } : {}),
-      });
-
-      const url = response.data?.url;
-      if (!url) {
-        toast.error(`Erro ao gerar variação ${i + 1}`);
-        continue;
-      }
-
-      results.push({
-        url,
-        label: v.label,
-        badge: v.badge,
-        badgeColor: v.badgeColor,
-        faceSwapAplicado: !!faceImageUrl,
-      });
-      setThumbs([...results]);
+    const url = response.data?.url;
+    if (!url) {
+      toast.error('Erro ao gerar thumbnail');
+    } else {
+      setThumbs(prev => [...prev, { url, faceSwapAplicado: !!faceImageUrl }]);
+      toast.success('Thumbnail gerada!');
     }
-
     setLoading(false);
-    if (results.length > 0) toast.success('Thumbnails geradas com sucesso!');
   };
 
   const faceRefName = apresentadorSelecionado?.nome || (fotoAvulsa ? 'Foto enviada' : null);
@@ -291,71 +239,68 @@ export default function GeradorComFaceSwap() {
           </div>
         )}
 
-        {/* Botão Gerar */}
-        <button
-          onClick={handleGerar}
-          disabled={loading || !title.trim() || !subject.trim()}
-          className="w-full flex items-center justify-center gap-2 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground rounded-xl font-semibold text-sm transition-all glow-blue"
-        >
-          {loading ? (
-            <>
-              <RefreshCw className="w-4 h-4 animate-spin" />
-              Gerando variação {loadingIdx} de 3...
-            </>
-          ) : thumbs.length > 0 ? (
-            <>
-              <RefreshCw className="w-4 h-4" />
-              Gerar Novas Variações
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4" />
-              Gerar 3 Thumbnails{faceRefName ? ' + Face Swap' : ''}
-              <ChevronRight className="w-4 h-4" />
-            </>
+        {/* Botões */}
+        <div className="flex gap-2">
+          <button
+            onClick={gerarUma}
+            disabled={loading || !title.trim() || !subject.trim()}
+            className="flex-1 flex items-center justify-center gap-2 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-primary-foreground rounded-xl font-semibold text-sm transition-all glow-blue"
+          >
+            {loading ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Gerando...
+              </>
+            ) : thumbs.length > 0 ? (
+              <>
+                <RefreshCw className="w-4 h-4" />
+                Gerar Variação
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Gerar Thumbnail{faceRefName ? ' + Face Swap' : ''}
+              </>
+            )}
+          </button>
+          {thumbs.length > 0 && (
+            <button
+              onClick={() => setThumbs([])}
+              disabled={loading}
+              className="px-4 py-3 bg-secondary/60 hover:bg-secondary border border-border rounded-xl text-xs text-muted-foreground hover:text-foreground transition-all disabled:opacity-50"
+            >
+              Limpar
+            </button>
           )}
-        </button>
+        </div>
       </div>
 
       {/* Resultados */}
       {(thumbs.length > 0 || loading) && (
-        <div className="space-y-4">
-          {loading && thumbs.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 border border-border rounded-xl bg-card">
-              <div className="relative w-14 h-14 mb-4">
+        <div className="space-y-3">
+          {loading && (
+            <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-xl">
+              <div className="relative w-7 h-7 flex-shrink-0">
                 <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
                 <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                <Sparkles className="absolute inset-0 m-auto w-5 h-5 text-primary" />
               </div>
-              <p className="text-sm font-medium text-foreground">Gerando variação {loadingIdx} de 3...</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {apresentadorSelecionado || fotoAvulsa ? 'Gerando imagem e aplicando face swap...' : 'Gerando thumbnail com IA...'}
+              <p className="text-sm text-foreground">
+                {apresentadorSelecionado || fotoAvulsa ? 'Gerando e aplicando face swap...' : 'Gerando thumbnail com IA...'}
               </p>
             </div>
           )}
 
-          {loading && thumbs.length > 0 && (
-            <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-xl">
-              <div className="relative w-8 h-8 flex-shrink-0">
-                <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
-                <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-              </div>
-              <p className="text-sm text-foreground">Gerando variação {loadingIdx} de 3...</p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-3">
             <AnimatePresence>
               {thumbs.map((thumb, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.08 }}
                   className="group relative bg-card border border-border rounded-xl overflow-hidden hover:border-primary/40 transition-all"
                 >
                   <div className="w-full aspect-video relative overflow-hidden bg-secondary/30">
-                    <img src={thumb.url} alt={thumb.label} className="w-full h-full object-cover" />
+                    <img src={thumb.url} alt={`Variação ${i + 1}`} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <a
                         href={thumb.url}
@@ -369,16 +314,13 @@ export default function GeradorComFaceSwap() {
                       </a>
                     </div>
                   </div>
-                  <div className="p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono ${thumb.badgeColor}`}>{thumb.badge}</span>
-                      <p className="text-xs font-medium text-foreground">{thumb.label}</p>
-                      {thumb.faceSwapAplicado && (
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-green-500/10 text-green-400 border border-green-500/20">
-                          face swap ✓
-                        </span>
-                      )}
-                    </div>
+                  <div className="p-3 flex items-center gap-2">
+                    <span className="text-[10px] font-mono text-muted-foreground">#{i + 1}</span>
+                    {thumb.faceSwapAplicado && (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-green-500/10 text-green-400 border border-green-500/20">
+                        face swap ✓
+                      </span>
+                    )}
                   </div>
                 </motion.div>
               ))}
@@ -392,7 +334,7 @@ export default function GeradorComFaceSwap() {
         <div className="flex flex-col items-center justify-center py-16 border-2 border-dashed border-border rounded-xl text-center">
           <ImageIcon className="w-10 h-10 text-muted-foreground/30 mb-3" />
           <p className="text-sm text-muted-foreground">Preencha o briefing acima e clique em Gerar</p>
-          <p className="text-xs text-muted-foreground/60 mt-1">A IA criará 3 variações · com face swap se um apresentador for selecionado</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">Gera 1 por vez · clique novamente para adicionar variações</p>
         </div>
       )}
     </div>
