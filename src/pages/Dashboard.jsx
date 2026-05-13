@@ -1,15 +1,17 @@
 import { motion } from 'framer-motion';
+import { lazy, Suspense } from 'react';
 import {
   FileText, Scissors, ImageIcon, Sparkles,
-  Video, TrendingUp, Clock, Zap,
+  Clock, Zap,
 } from 'lucide-react';
 import MetricCard from '../components/dashboard/MetricCard';
-import RecentProjects from '../components/dashboard/RecentProjects';
-import ActivityChart from '../components/dashboard/ActivityChart';
-import QuickActions from '../components/dashboard/QuickActions';
 import ScoreRing from '../components/dashboard/ScoreRing';
-import FunnelIntelligence from '../components/dashboard/FunnelIntelligence';
 import { useFunnel } from '@/lib/FunnelContext';
+
+const RecentProjects = lazy(() => import('../components/dashboard/RecentProjects'));
+const ActivityChart = lazy(() => import('../components/dashboard/ActivityChart'));
+const QuickActions = lazy(() => import('../components/dashboard/QuickActions'));
+const FunnelIntelligence = lazy(() => import('../components/dashboard/FunnelIntelligence'));
 
 const metrics = [
   { title: 'Roteiros Analisados', value: '148', change: '+12%', changeType: 'up', subtitle: 'este mês', icon: FileText, color: 'primary', delay: 0 },
@@ -60,17 +62,25 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left — Chart + Projects */}
-        <div className="lg:col-span-2 space-y-6">
-          <ActivityChart />
-          <RecentProjects />
-        </div>
+       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+         {/* Left — Chart + Projects */}
+         <div className="lg:col-span-2 space-y-6">
+           <Suspense fallback={<div className="h-80 bg-card rounded-xl animate-pulse" />}>
+             <ActivityChart />
+           </Suspense>
+           <Suspense fallback={<div className="h-96 bg-card rounded-xl animate-pulse" />}>
+             <RecentProjects />
+           </Suspense>
+         </div>
 
-        {/* Right — Quick Actions + Funnel Intel + AI Insights */}
-        <div className="space-y-6">
-          <FunnelIntelligence />
-          <QuickActions />
+         {/* Right — Quick Actions + Funnel Intel + AI Insights */}
+         <div className="space-y-6">
+           <Suspense fallback={<div className="h-64 bg-card rounded-xl animate-pulse" />}>
+             <FunnelIntelligence />
+           </Suspense>
+           <Suspense fallback={<div className="h-48 bg-card rounded-xl animate-pulse" />}>
+             <QuickActions />
+           </Suspense>
 
           {/* AI Insights */}
           <motion.div
