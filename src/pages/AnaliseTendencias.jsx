@@ -7,8 +7,21 @@ import TendenciaFiltros from '../components/tendencias/TendenciaFiltros';
 
 const CATEGORIAS = ['Todos', 'Estilo Visual', 'Elemento Comum', 'Formato de Conteúdo'];
 
+const NICHE_KEYWORDS = [
+  'seguro de viagem',
+  'seguro viagem internacional',
+  'destinos turísticos trending',
+  'viagem barata',
+  'cobertura médica viagem',
+  'passagens aéreas em alta',
+  'hotéis e hospedagem trending',
+  'viagem de mochila',
+  'turismo aventura',
+  'seguro viagem europa'
+];
+
 export default function AnaliseTendencias() {
-  const [keywords, setKeywords] = useState('');
+  const [keywords, setKeywords] = useState('seguro de viagem e destinos');
   const [loading, setLoading] = useState(false);
   const [tendencias, setTendencias] = useState([]);
   const [filtro, setFiltro] = useState('Todos');
@@ -22,8 +35,8 @@ export default function AnaliseTendencias() {
 
     // Passo 1: Busca contexto sobre tendências de thumbnails na web
     const buscaResultado = await base44.integrations.Core.InvokeLLM({
-      prompt: `Você é um especialista em YouTube e design de thumbnails virais. 
-Com base no nicho/palavras-chave: "${keywords}", analise as TENDÊNCIAS ATUAIS de thumbnails que estão performando bem neste nicho no YouTube Brasil.
+      prompt: `Você é um especialista em YouTube e design de thumbnails virais para o nicho de SEGURO DE VIAGEM E VIAGENS.
+Com base nas palavras-chave: "${keywords}", analise as TENDÊNCIAS ATUAIS de thumbnails que estão performando bem neste nicho específico no YouTube Brasil.
 
 Para cada tendência identificada, gere um prompt detalhado para criar uma imagem ilustrativa dessa tendência e classifique-a.
 
@@ -125,18 +138,21 @@ Gere exatamente 6 tendências variadas cobrindo os 3 tipos de categoria.`,
           </button>
         </div>
 
-        {/* Sugestões rápidas */}
-        {!analisado && !loading && (
-          <div className="flex flex-wrap gap-2">
-            {['seguro de viagem', 'finanças pessoais', 'empreendedorismo', 'tecnologia 2025', 'saúde e bem-estar'].map(s => (
-              <button
-                key={s}
-                onClick={() => setKeywords(s)}
-                className="text-xs px-3 py-1.5 bg-secondary/50 hover:bg-secondary border border-border rounded-full text-muted-foreground hover:text-foreground transition-all"
-              >
-                {s}
-              </button>
-            ))}
+        {/* Sugestões rápidas - Nicho Seguro de Viagem */}
+         {!analisado && !loading && (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">Palavras-chave populares do nicho:</p>
+            <div className="flex flex-wrap gap-2">
+              {NICHE_KEYWORDS.map(s => (
+                <button
+                  key={s}
+                  onClick={() => setKeywords(s)}
+                  className="text-xs px-3 py-1.5 bg-secondary/50 hover:bg-secondary border border-border rounded-full text-muted-foreground hover:text-foreground transition-all"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
