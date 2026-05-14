@@ -25,10 +25,10 @@ export default function EditorSugestaoCard({ momento, index, roteiro }) {
 
     setGerandoImagem(true);
     try {
-      const resultado = await base44.integrations.Core.GenerateImage({
+      const resultado = await base44.functions.invoke('gerarImagemWavespeed', {
         prompt: promptEditado
       });
-      setImagemGerada(resultado.url);
+      setImagemGerada(resultado.data.url);
       toast.success('Imagem gerada com sucesso!');
       setEditandoPrompt(false);
     } catch (error) {
