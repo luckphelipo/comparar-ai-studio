@@ -150,7 +150,7 @@ function ApresentadorModal({ apresentador, onSave, onClose }) {
   );
 }
 
-export default function BibliotecaPessoas() {
+export default function BibliotecaPessoas({ isEmbedded = false }) {
   const [apresentadores, setApresentadores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null); // null | 'novo' | apresentador
@@ -184,34 +184,50 @@ export default function BibliotecaPessoas() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-            <Users className="w-5 h-5 text-primary" />
+    <div className={!isEmbedded ? 'space-y-6 animate-fade-in' : 'space-y-4'}>
+      {!isEmbedded && (
+        <>
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                <Users className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-base font-bold text-foreground">Biblioteca de Pessoas</h1>
+                <p className="text-xs text-muted-foreground">Apresentadores disponíveis para usar nas thumbnails</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setModal('novo')}
+              className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-sm font-semibold transition-all glow-blue"
+            >
+              <Plus className="w-4 h-4" />
+              Adicionar
+            </button>
           </div>
-          <div>
-            <h1 className="text-base font-bold text-foreground">Biblioteca de Pessoas</h1>
-            <p className="text-xs text-muted-foreground">Apresentadores disponíveis para usar nas thumbnails</p>
-          </div>
-        </div>
-        <button
-          onClick={() => setModal('novo')}
-          className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-sm font-semibold transition-all glow-blue"
-        >
-          <Plus className="w-4 h-4" />
-          Adicionar
-        </button>
-      </div>
 
-      {/* Info banner */}
-      <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">
-        <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-        <p className="text-xs text-muted-foreground">
-          As fotos cadastradas aqui ficam disponíveis para seleção no <strong className="text-foreground">Thumb Designer IA</strong>. Quando você escolher um apresentador, o agente usará a foto como referência visual para gerar a thumbnail.
-        </p>
-      </div>
+          {/* Info banner */}
+          <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              As fotos cadastradas aqui ficam disponíveis para seleção no <strong className="text-foreground">Thumb Designer IA</strong>. Quando você escolher um apresentador, o agente usará a foto como referência visual para gerar a thumbnail.
+            </p>
+          </div>
+        </>
+      )}
+
+      {isEmbedded && (
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setModal('novo')}
+            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl text-sm font-semibold transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            Adicionar
+          </button>
+        </div>
+      )}
 
       {/* Grid */}
       {loading ? (

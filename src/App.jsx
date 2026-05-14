@@ -17,7 +17,6 @@ import Biblioteca from './pages/Biblioteca';
 import Editor from './pages/Editor';
 import Configuracoes from './pages/Configuracoes';
 import ThumbCreator from './pages/ThumbCreator';
-import BibliotecaPessoas from './pages/BibliotecaPessoas';
 import AnaliseTendencias from './pages/AnaliseTendencias';
 
 const AuthenticatedApp = () => {
@@ -56,7 +55,6 @@ const AuthenticatedApp = () => {
         <Route path="/editor" element={<Editor />} />
         <Route path="/configuracoes" element={<Configuracoes />} />
         <Route path="/thumb-creator" element={<ThumbCreator />} />
-        <Route path="/biblioteca-pessoas" element={<BibliotecaPessoas />} />
         <Route path="/tendencias" element={<AnaliseTendencias />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />

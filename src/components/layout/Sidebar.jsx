@@ -22,7 +22,6 @@ const navItems = [
   { icon: Scissors, label: 'Auto Shorts', path: '/shorts', badge: 'NEW' },
   { icon: Palette, label: 'Thumb Creator', path: '/thumb-creator', badge: 'AI' },
   { icon: Library, label: 'Biblioteca', path: '/biblioteca' },
-  { icon: Users, label: 'Biblioteca de Pessoas', path: '/biblioteca-pessoas' },
   { icon: TrendingUp, label: 'Análise de Tendências', path: '/tendencias', badge: 'NEW' },
   { icon: Wand2, label: 'Assistente de Editor', path: '/editor', badge: 'AI' },
   { icon: Settings, label: 'Configurações', path: '/configuracoes' },
