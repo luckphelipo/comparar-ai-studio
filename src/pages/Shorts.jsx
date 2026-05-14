@@ -137,7 +137,12 @@ export default function Shorts() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground">{cut.label}</p>
-                    <p className="text-xs text-muted-foreground font-mono mt-0.5 truncate">{cut.inicio || cut.time}</p>
+                    <p className="text-xs text-muted-foreground font-mono mt-0.5">{cut.inicio || cut.time}</p>
+                    {cut.texto && (
+                      <p className="text-xs text-foreground/70 mt-2 bg-secondary/40 border border-border/50 rounded-lg px-3 py-2 leading-relaxed whitespace-pre-wrap">
+                        {cut.texto}
+                      </p>
+                    )}
                   </div>
                   <span className={`text-[10px] font-bold px-2 py-1 rounded font-mono border ${config.badgeClass}`}>{cut.tag || 'CORTE'}</span>
                   <div className={`text-sm font-bold font-mono ${cut.score >= 90 ? 'score-high' : 'score-mid'}`}>{cut.score}</div>
