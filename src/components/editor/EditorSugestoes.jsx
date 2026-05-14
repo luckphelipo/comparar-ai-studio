@@ -113,17 +113,19 @@ export default function EditorSugestoes({ sugestoes, roteiro, titulo }) {
 
       {/* CTA Final */}
       {sugestoes.cta_final && (
-        <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 space-y-2">
+        <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 space-y-3">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">CTA Final</h3>
           </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">
-              <span className="font-mono font-bold text-primary">{sugestoes.cta_final.timestamp_inicio_segundos}s</span>
-            </p>
-            <p className="text-sm text-muted-foreground leading-relaxed">{sugestoes.cta_final.sugestao}</p>
-          </div>
+          {sugestoes.cta_final.trecho_roteiro && (
+            <div className="bg-primary/10 rounded-lg p-3 border-l-2 border-primary">
+              <p className="text-[11px] text-muted-foreground font-mono leading-relaxed italic">
+                "{sugestoes.cta_final.trecho_roteiro}"
+              </p>
+            </div>
+          )}
+          <p className="text-sm text-muted-foreground leading-relaxed">{sugestoes.cta_final.sugestao}</p>
         </div>
       )}
     </motion.div>

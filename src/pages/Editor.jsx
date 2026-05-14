@@ -66,7 +66,7 @@ Responde APENAS com um JSON válido, seguindo EXATAMENTE este schema:
   "duration_total_minutes": <número>,
   "momentos_criticos": [
     {
-      "timestamp_segundos": <número>,
+      "trecho_roteiro": "<TRECHO EXATO do roteiro — copie palavra por palavra>",
       "tipo_insercao": "<tipo>",
       "descricao": "<descrição>",
       "duracao_insercao_segundos": <número>,
@@ -80,7 +80,7 @@ Responde APENAS com um JSON válido, seguindo EXATAMENTE este schema:
     }
   ],
   "cta_final": {
-    "timestamp_inicio_segundos": <número>,
+    "trecho_roteiro": "<TRECHO EXATO do roteiro do CTA>",
     "sugestao": "<detalhe do CTA visual>"
   },
   "notas_gerais": "<observações sobre ritmo e retenção>"

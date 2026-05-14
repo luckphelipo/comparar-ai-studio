@@ -49,20 +49,26 @@ export default function EditorSugestaoCard({ momento, index, roteiro }) {
     >
       {/* Header */}
       <div className="flex items-start justify-between">
-        <div>
+        <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
             <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-xs font-bold text-primary">
               {index + 1}
             </span>
-            <span className="text-xs font-mono text-muted-foreground">{momento.timestamp_segundos}s</span>
             <span className="px-2 py-1 bg-highlight/10 text-highlight rounded text-[10px] font-semibold">
               {momento.tipo_insercao}
             </span>
           </div>
+          {momento.trecho_roteiro && (
+            <div className="bg-secondary/40 rounded-lg p-3 mb-3 border-l-2 border-primary/50">
+              <p className="text-[11px] text-muted-foreground font-mono leading-relaxed italic">
+                "{momento.trecho_roteiro}"
+              </p>
+            </div>
+          )}
           <p className="text-sm text-foreground font-medium">{momento.descricao}</p>
           <p className="text-xs text-muted-foreground mt-1">Duração: {momento.duracao_insercao_segundos}s</p>
         </div>
-        <Wand2 className="w-5 h-5 text-primary flex-shrink-0" />
+        <Wand2 className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
       </div>
 
       {/* Prompt Section */}
