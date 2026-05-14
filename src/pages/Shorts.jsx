@@ -44,7 +44,7 @@ export default function Shorts() {
     try {
       const response = await base44.functions.invoke('gerarCortesShorts', {
         roteiro,
-        funil
+        funil: funnel
       });
       setGeneratedCuts(response.data.cortes || []);
       setShowInput(false);
