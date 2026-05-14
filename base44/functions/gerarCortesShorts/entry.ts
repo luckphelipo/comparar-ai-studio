@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
     }
 
     const prompt = funil === 'top'
-      ? `Analise o seguinte roteiro de vídeo e identifique os melhores CORTES para shorts virais. Procure por momentos com gancho emocional, surpresa, curiosidade máxima e picos de entretenimento.
+      ? `Analise o seguinte roteiro de vídeo e identifique os melhores CORTES para shorts virais. Procure por momentos com gancho emocional, surpresa, curiosidade máxima e picos de entretenimento. IMPORTANTE: cada corte deve ter no mínimo 30 segundos de conteúdo (o trecho do roteiro deve ser longo o suficiente para preencher pelo menos 30 segundos de fala).
 
 Roteiro:
 ${roteiro}
@@ -34,7 +34,7 @@ Retorne um JSON com este formato exato:
 }
 
 Retorne APENAS o JSON, sem explicações adicionais.`
-      : `Analise o seguinte roteiro de vídeo e identifique os melhores CORTES para shorts de conversão. Procure por explicações-chave, provas de autoridade, informações de alto impacto e call-to-action.
+      : `Analise o seguinte roteiro de vídeo e identifique os melhores CORTES para shorts de conversão. Procure por explicações-chave, provas de autoridade, informações de alto impacto e call-to-action. IMPORTANTE: cada corte deve ter no mínimo 30 segundos de conteúdo (o trecho do roteiro deve ser longo o suficiente para preencher pelo menos 30 segundos de fala).
 
 Roteiro:
 ${roteiro}
