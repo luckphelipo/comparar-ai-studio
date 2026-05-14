@@ -1,6 +1,9 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Scissors, Rocket, Target, Sparkles, Zap } from 'lucide-react';
+import { useState } from 'react';
+import { Scissors, Rocket, Target, Sparkles, Zap, Loader2 } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 import { useFunnel } from '@/lib/FunnelContext';
+import RoteiroInput from '@/components/shorts/RoteiroInput';
 
 const shortsFocusConfig = {
   top: {
@@ -31,9 +34,34 @@ export default function Shorts() {
   const { funnel, config } = useFunnel();
   const data = shortsFocusConfig[funnel];
   const Icon = funnel === 'top' ? Rocket : Target;
+  
+  const [generatedCuts, setGeneratedCuts] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [showInput, setShowInput] = useState(true);
+
+  const handleRoteiroSelect = async (roteiro) => {
+    setLoading(true);
+    try {
+      const response = await base44.functions.invoke('gerarCortesShorts', {
+        roteiro,
+        funil
+      });
+      setGeneratedCuts(response.data.cortes || []);
+      setShowInput(false);
+    } catch (error) {
+      console.error('Erro ao gerar cortes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Input Roteiro */}
+      {showInput && (
+        <RoteiroInput onRoteiroSelect={handleRoteiroSelect} />
+      )}
+
       {/* Funnel Banner */}
       <AnimatePresence mode="wait">
         <motion.div
@@ -60,48 +88,69 @@ export default function Shorts() {
         </motion.div>
       </AnimatePresence>
 
-      {/* Cuts */}
-      <AnimatePresence mode="wait">
+      {/* Loading State */}
+      {loading && (
         <motion.div
-          key={funnel + '-cuts'}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          className="bg-card border border-border rounded-xl overflow-hidden"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="bg-card border border-border rounded-xl p-8 flex flex-col items-center justify-center gap-3"
         >
-          <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
-            <Scissors className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-semibold text-foreground">Cortes Detectados pela IA</h3>
-            <span className="text-xs text-muted-foreground ml-auto">iPhone 16 Pro vs Samsung S25 Ultra</span>
-          </div>
-          <div className="divide-y divide-border">
-            {data.cuts.map((cut, i) => (
-              <motion.div
-                key={cut.label}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="flex items-center gap-4 px-5 py-4 hover:bg-secondary/20 transition-colors"
-              >
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold font-mono text-primary">
-                  {String(i + 1).padStart(2, '0')}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">{cut.label}</p>
-                  <p className="text-xs text-muted-foreground font-mono mt-0.5">{cut.time}</p>
-                </div>
-                <span className={`text-[10px] font-bold px-2 py-1 rounded font-mono border ${config.badgeClass}`}>{cut.tag}</span>
-                <div className={`text-sm font-bold font-mono ${cut.score >= 90 ? 'score-high' : 'score-mid'}`}>{cut.score}</div>
-              </motion.div>
-            ))}
-          </div>
-          <div className={`px-5 py-3 border-t border-border flex items-center gap-2 ${config.bgClass}`}>
-            <Zap className={`w-3.5 h-3.5 flex-shrink-0 ${config.colorClass}`} />
-            <p className={`text-xs font-medium ${config.colorClass}`}>{data.tip}</p>
-          </div>
+          <Loader2 className="w-6 h-6 text-primary animate-spin" />
+          <p className="text-sm text-muted-foreground">Analisando roteiro e gerando cortes...</p>
         </motion.div>
-      </AnimatePresence>
+      )}
+
+      {/* Cuts */}
+      {!loading && (generatedCuts ? generatedCuts.length > 0 : true) && (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={funnel + '-cuts'}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="bg-card border border-border rounded-xl overflow-hidden"
+          >
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+              <Scissors className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">Cortes Detectados pela IA</h3>
+              {!generatedCuts && (
+                <button 
+                  onClick={() => setShowInput(true)}
+                  className="ml-auto text-xs text-primary hover:underline"
+                >
+                  Selecionar outro
+                </button>
+              )}
+            </div>
+            <div className="divide-y divide-border">
+              {(generatedCuts || data.cuts).map((cut, i) => (
+                <motion.div
+                  key={cut.label}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="flex items-center gap-4 px-5 py-4 hover:bg-secondary/20 transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold font-mono text-primary">
+                    {String(i + 1).padStart(2, '0')}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">{cut.label}</p>
+                    <p className="text-xs text-muted-foreground font-mono mt-0.5 truncate">{cut.inicio || cut.time}</p>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-1 rounded font-mono border ${config.badgeClass}`}>{cut.tag || 'CORTE'}</span>
+                  <div className={`text-sm font-bold font-mono ${cut.score >= 90 ? 'score-high' : 'score-mid'}`}>{cut.score}</div>
+                </motion.div>
+              ))}
+            </div>
+            <div className={`px-5 py-3 border-t border-border flex items-center gap-2 ${config.bgClass}`}>
+              <Zap className={`w-3.5 h-3.5 flex-shrink-0 ${config.colorClass}`} />
+              <p className={`text-xs font-medium ${config.colorClass}`}>{data.tip}</p>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      )}
 
       {/* Coming Soon note */}
       <div className="flex items-center justify-center p-6 border-2 border-dashed border-border rounded-xl">
